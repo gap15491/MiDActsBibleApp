@@ -1,177 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>MAD Study Library</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
 <style>
-:root{--bg:#ffffff;--bg2:#f5f5f5;--bg3:#eeeeee;--text:#1a1a1a;--text2:#555;--text3:#888;--border:#e0e0e0;--border2:#cccccc;--radius:8px;--radius-lg:12px;--gold:#1a6b3a;}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg2);color:var(--text);min-height:100vh;}
-#app{display:flex;flex-direction:column;min-height:100vh;}
-.topbar{background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0;padding:0 16px;position:sticky;top:0;z-index:10;}
-.brand{display:flex;align-items:center;gap:10px;padding:12px 16px 12px 0;margin-right:16px;border-right:1px solid var(--border);}
-.brand-icon{width:34px;height:34px;background:var(--gold);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#1a1a1a;min-height:100vh;}
+.topbar{background:#fff;border-bottom:1px solid #e0e0e0;display:flex;align-items:center;padding:0 16px;position:sticky;top:0;z-index:10;}
+.brand{display:flex;align-items:center;gap:10px;padding:12px 16px 12px 0;margin-right:16px;border-right:1px solid #e0e0e0;}
+.brand-icon{width:34px;height:34px;background:#1a6b3a;border-radius:8px;display:flex;align-items:center;justify-content:center;}
 .brand-icon i{font-size:18px;color:#fff;}
-.brand-name{font-size:15px;font-weight:600;color:var(--text);}
-.brand-sub{font-size:11px;color:var(--text3);}
-.tabs{display:flex;gap:0;flex:1;}
-.tab{padding:14px 16px;font-size:13px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;white-space:nowrap;user-select:none;}
-.tab:hover{color:var(--text);}
-.tab.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:500;}
+.brand-name{font-size:15px;font-weight:600;}
+.brand-sub{font-size:11px;color:#888;}
+.tabs{display:flex;flex:1;}
+.tab{padding:14px 16px;font-size:13px;cursor:pointer;color:#555;border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;white-space:nowrap;user-select:none;}
+.tab:hover{color:#1a1a1a;}
+.tab.active{color:#1a6b3a;border-bottom-color:#1a6b3a;font-weight:500;}
 .tab i{font-size:15px;}
-.badge{background:var(--bg3);color:var(--text3);font-size:10px;padding:1px 5px;border-radius:10px;border:1px solid var(--border);}
-.stats{margin-left:auto;display:flex;gap:20px;padding-left:16px;border-left:1px solid var(--border);}
-.stat{text-align:right;font-size:11px;color:var(--text3);}
-.stat strong{display:block;font-size:15px;font-weight:600;color:var(--text);}
-.layout{display:grid;grid-template-columns:260px 1fr;flex:1;min-height:calc(100vh - 53px);}
-.sidebar{background:var(--bg);border-right:1px solid var(--border);display:flex;flex-direction:column;}
-.sb-head{padding:10px 14px 6px;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);}
-.teacher-list{flex:1;overflow-y:auto;padding:4px 0;}
-.ti{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;position:relative;}
-.ti:hover{background:var(--bg2);}
-.ti.active{background:var(--bg2);border-left:3px solid var(--gold);}
-.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;}
-.ti-info{flex:1;min-width:0;}
-.ti-name{font-size:13px;font-weight:500;color:var(--text);white-space:normal;word-break:break-word;line-height:1.3;}
-.ti-count{font-size:10px;color:var(--text3);margin-top:2px;}
-.ti-actions{display:none;gap:4px;flex-shrink:0;}
-.ti:hover .ti-actions{display:flex;}
-.icon-btn{background:none;border:none;cursor:pointer;padding:2px 4px;color:var(--text3);font-size:13px;border-radius:4px;}
-.icon-btn:hover{background:var(--border);color:var(--text2);}
-.sb-add{padding:10px 14px;display:flex;align-items:center;gap:6px;cursor:pointer;border-top:1px solid var(--border);}
-.sb-add:hover{background:var(--bg2);}
-.sb-add span{font-size:13px;color:var(--text2);}
-.add-form{padding:14px;border-top:1px solid var(--border);display:none;flex-direction:column;gap:8px;background:var(--bg2);}
-.add-form.show{display:flex;}
-.add-form label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;}
-.add-form input{padding:8px 10px;font-size:13px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);width:100%;}
-.add-form input:focus{outline:none;border-color:var(--gold);}
-.add-form-row{display:flex;gap:6px;}
-.main{display:flex;flex-direction:column;background:var(--bg2);}
+.badge{background:#eee;color:#888;font-size:10px;padding:1px 5px;border-radius:10px;border:1px solid #e0e0e0;}
+.topbar-right{margin-left:auto;display:flex;gap:20px;padding-left:16px;border-left:1px solid #e0e0e0;}
+.stat{text-align:right;font-size:11px;color:#888;}
+.stat strong{display:block;font-size:15px;font-weight:600;color:#1a1a1a;}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 53px);}
+.sidebar{background:#fff;border-right:1px solid #e0e0e0;display:flex;flex-direction:column;}
+.sb-head{padding:10px 16px 8px;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #e0e0e0;}
+.teacher-list{flex:1;overflow-y:auto;}
+.t-item{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-left:3px solid transparent;}
+.t-item:hover{background:#f5f5f5;}
+.t-item.active{background:#f0f7f3;border-left-color:#1a6b3a;}
+.t-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.t-name{font-size:14px;font-weight:600;color:#1a1a1a;line-height:1.3;}
+.t-ministry{font-size:11px;color:#888;margin-top:2px;}
+.t-count{font-size:11px;color:#1a6b3a;margin-top:2px;font-weight:500;}
+.t-actions{margin-left:auto;display:none;gap:4px;}
+.t-item:hover .t-actions{display:flex;}
+.icon-btn{background:none;border:none;cursor:pointer;padding:4px;color:#888;font-size:14px;border-radius:4px;}
+.icon-btn:hover{background:#e0e0e0;color:#555;}
+.sb-footer{border-top:1px solid #e0e0e0;}
+.sb-add{padding:12px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;}
+.sb-add:hover{background:#f5f5f5;}
+.sb-add span{font-size:13px;color:#555;}
+.add-form{padding:14px 16px;border-top:1px solid #e0e0e0;display:none;flex-direction:column;gap:8px;background:#f9f9f9;}
+.add-form.open{display:flex;}
+.add-form label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;}
+.add-form input{padding:8px 10px;font-size:13px;border-radius:6px;border:1px solid #ccc;background:#fff;width:100%;}
+.add-form input:focus{outline:none;border-color:#1a6b3a;}
+.add-row{display:flex;gap:8px;}
+.btn{padding:8px 14px;font-size:12px;border-radius:6px;border:1px solid #ccc;cursor:pointer;background:#fff;color:#555;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn:hover{background:#f5f5f5;color:#1a1a1a;}
+.btn.green{background:#1a6b3a;color:#fff;border-color:#1a6b3a;}
+.btn.green:hover{background:#145c30;}
+.btn i{font-size:14px;}
+.main{display:flex;flex-direction:column;background:#f5f5f5;}
 .panel{display:none;flex-direction:column;flex:1;}
 .panel.active{display:flex;}
-.toolbar{background:var(--bg);border-bottom:1px solid var(--border);padding:12px 18px;}
+.toolbar{background:#fff;border-bottom:1px solid #e0e0e0;padding:14px 18px;}
 .search-row{display:flex;gap:8px;margin-bottom:10px;}
-.search-input{flex:1;padding:9px 13px;font-size:13px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg2);}
-.search-input:focus{outline:none;border-color:var(--gold);}
-.btn{padding:8px 14px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);cursor:pointer;background:var(--bg);color:var(--text2);display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
-.btn:hover{background:var(--bg2);color:var(--text);}
-.btn.primary{background:var(--gold);color:#fff;border-color:var(--gold);}
-.btn.primary:hover{opacity:.9;}
-.btn i{font-size:14px;}
+.search-input{flex:1;padding:9px 13px;font-size:13px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;}
+.search-input:focus{outline:none;border-color:#1a6b3a;}
 .scope-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-.scope-lbl{font-size:11px;color:var(--text3);}
-.pill{padding:3px 10px;font-size:11px;border-radius:20px;border:1px solid var(--border);cursor:pointer;background:var(--bg2);color:var(--text2);user-select:none;}
-.pill:hover,.pill.on{background:var(--bg);border-color:var(--border2);color:var(--text);}
+.scope-lbl{font-size:11px;color:#888;}
+.pill{padding:3px 10px;font-size:11px;border-radius:20px;border:1px solid #e0e0e0;cursor:pointer;background:#f5f5f5;color:#555;user-select:none;}
+.pill:hover,.pill.on{background:#fff;border-color:#ccc;color:#1a1a1a;}
 .topics{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
 .results{flex:1;overflow-y:auto;padding:16px 18px;}
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;gap:10px;text-align:center;}
-.empty i{font-size:36px;color:var(--text3);}
-.empty-t{font-size:14px;font-weight:500;color:var(--text2);}
-.empty-s{font-size:12px;color:var(--text3);max-width:300px;line-height:1.6;}
-.rcard{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;}
-.rcard-head{display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--border);}
-.rcard-teacher{font-size:12px;font-weight:500;color:var(--text2);flex:1;}
-.rcard-meta{font-size:11px;color:var(--text3);}
-.rcard-text{font-size:13px;color:var(--text);line-height:1.8;white-space:pre-wrap;}
-.cmp-bar{background:var(--bg);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.cmp-lbl{font-size:11px;color:var(--text3);}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:12px;text-align:center;}
+.empty i{font-size:40px;color:#ccc;}
+.empty-t{font-size:15px;font-weight:500;color:#555;}
+.empty-s{font-size:13px;color:#888;max-width:320px;line-height:1.6;}
+.rcard{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-bottom:12px;}
+.rcard-head{display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #e0e0e0;}
+.rcard-q{font-size:13px;font-weight:500;color:#555;flex:1;}
+.rcard-text{font-size:13px;color:#1a1a1a;line-height:1.8;white-space:pre-wrap;}
+.cmp-bar{background:#fff;border-bottom:1px solid #e0e0e0;padding:10px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .chips{display:flex;gap:6px;flex-wrap:wrap;}
-.chip{padding:4px 11px;font-size:11px;border-radius:20px;border:1px solid var(--border);cursor:pointer;background:var(--bg2);color:var(--text2);display:flex;align-items:center;gap:5px;user-select:none;}
-.chip:hover{border-color:var(--border2);}
-.chip.on{font-weight:500;color:var(--text);}
-.cmp-grid{display:grid;gap:10px;margin-bottom:10px;}
-.cmp-col{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;min-width:0;}
-.cmp-col-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-.cmp-col-name{font-size:12px;font-weight:500;}
+.chip{padding:4px 11px;font-size:11px;border-radius:20px;border:1px solid #e0e0e0;cursor:pointer;background:#f5f5f5;color:#555;display:flex;align-items:center;gap:5px;user-select:none;}
+.chip.on{font-weight:600;color:#1a1a1a;border-color:#999;}
+.cmp-grid{display:grid;gap:12px;margin-bottom:12px;}
+.cmp-col{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:14px;min-width:0;}
+.cmp-col-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e0e0;font-size:13px;font-weight:600;}
 .cmp-col-text{font-size:12px;line-height:1.8;white-space:pre-wrap;}
-.hist-list{flex:1;overflow-y:auto;padding:14px 18px;}
-.hitem{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;}
-.hitem:hover{border-color:var(--border2);}
-.hitem i{font-size:15px;color:var(--text3);flex-shrink:0;margin-top:2px;}
+.hist-list{flex:1;overflow-y:auto;padding:16px 18px;}
+.hitem{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;}
+.hitem:hover{border-color:#ccc;}
 .hitem-q{font-size:13px;font-weight:500;margin-bottom:3px;}
-.hitem-meta{font-size:11px;color:var(--text3);}
+.hitem-meta{font-size:11px;color:#888;}
 .hitem-right{margin-left:auto;display:flex;gap:6px;flex-shrink:0;align-items:center;}
-.scope-tag{font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);}
-.notes-tb{background:var(--bg);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:8px;}
-.notes-title{flex:1;padding:7px 11px;font-size:13px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg2);}
-.notes-title:focus{outline:none;border-color:var(--gold);}
-.notes-tag{padding:7px 10px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg2);}
-.notes-body{display:grid;grid-template-columns:200px 1fr;flex:1;overflow:hidden;}
-.notes-list{border-right:1px solid var(--border);overflow-y:auto;background:var(--bg);}
-.nitem{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);}
-.nitem:hover{background:var(--bg2);}
-.nitem.active{background:var(--bg2);border-left:2px solid var(--gold);}
-.nitem-title{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
-.nitem-meta{font-size:10px;color:var(--text3);}
-.nitem-tag{font-size:10px;color:var(--text2);}
-.note-editor{flex:1;display:flex;flex-direction:column;padding:14px 18px;}
-.note-ta{flex:1;padding:12px;font-size:13px;line-height:1.8;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);resize:none;font-family:inherit;}
-.note-ta:focus{outline:none;border-color:var(--gold);}
-.note-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;color:var(--text3);}
-.statusbar{background:var(--bg);border-top:1px solid var(--border);padding:7px 18px;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;}
+.scope-tag{font-size:10px;padding:2px 7px;border-radius:10px;background:#f5f5f5;color:#888;border:1px solid #e0e0e0;}
+.notes-tb{background:#fff;border-bottom:1px solid #e0e0e0;padding:10px 18px;display:flex;align-items:center;gap:8px;}
+.notes-title{flex:1;padding:7px 11px;font-size:13px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;}
+.notes-title:focus{outline:none;border-color:#1a6b3a;}
+.notes-tag{padding:7px 10px;font-size:12px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;}
+.notes-body{display:grid;grid-template-columns:220px 1fr;flex:1;overflow:hidden;}
+.notes-list{border-right:1px solid #e0e0e0;overflow-y:auto;background:#fff;}
+.nitem{padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;}
+.nitem:hover{background:#f5f5f5;}
+.nitem.active{background:#f0f7f3;border-left:2px solid #1a6b3a;}
+.nitem-title{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
+.nitem-meta{font-size:10px;color:#888;}
+.note-editor{flex:1;display:flex;flex-direction:column;padding:16px 18px;}
+.note-ta{flex:1;padding:12px;font-size:13px;line-height:1.8;border-radius:6px;border:1px solid #ccc;background:#fff;resize:none;font-family:inherit;}
+.note-ta:focus{outline:none;border-color:#1a6b3a;}
+.note-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;color:#ccc;}
+.statusbar{background:#fff;border-top:1px solid #e0e0e0;padding:7px 18px;font-size:11px;color:#888;display:flex;align-items:center;gap:6px;}
 .spin{animation:spin 1s linear infinite;display:inline-block;}
 @keyframes spin{to{transform:rotate(360deg);}}
-input[type=file]{display:none;}
 </style>
 </head>
 <body>
 <div id="app">
-
 <div class="topbar">
   <div class="brand">
     <div class="brand-icon"><i class="ti ti-books"></i></div>
-    <div>
-      <div class="brand-name">MAD Study Library</div>
-      <div class="brand-sub">Rightly dividing the Word of Truth</div>
-    </div>
+    <div><div class="brand-name">MAD Study Library</div><div class="brand-sub">Rightly dividing the Word of Truth</div></div>
   </div>
   <div class="tabs">
-    <div class="tab active" onclick="showPanel('search')" id="tab-search"><i class="ti ti-search"></i>Search</div>
-    <div class="tab" onclick="showPanel('compare')" id="tab-compare"><i class="ti ti-columns"></i>Compare <span class="badge" id="b-cmp">0</span></div>
-    <div class="tab" onclick="showPanel('history')" id="tab-history"><i class="ti ti-history"></i>History <span class="badge" id="b-hist">0</span></div>
-    <div class="tab" onclick="showPanel('notes')" id="tab-notes"><i class="ti ti-notes"></i>Notes <span class="badge" id="b-notes">0</span></div>
+    <div class="tab active" id="tab-search" onclick="showPanel('search')"><i class="ti ti-search"></i>Search</div>
+    <div class="tab" id="tab-compare" onclick="showPanel('compare')"><i class="ti ti-columns"></i>Compare <span class="badge" id="b-cmp">0</span></div>
+    <div class="tab" id="tab-history" onclick="showPanel('history')"><i class="ti ti-history"></i>History <span class="badge" id="b-hist">0</span></div>
+    <div class="tab" id="tab-notes" onclick="showPanel('notes')"><i class="ti ti-notes"></i>Notes <span class="badge" id="b-notes">0</span></div>
   </div>
-  <div class="stats">
+  <div class="topbar-right">
     <div class="stat"><strong id="total-files">0</strong>transcripts</div>
-    <div class="stat"><strong id="total-teachers">0</strong>teachers active</div>
+    <div class="stat"><strong id="total-teachers">0</strong>active</div>
   </div>
 </div>
-
 <div class="layout">
-
   <div class="sidebar">
     <div class="sb-head">Teachers</div>
     <div class="teacher-list" id="teacher-list"></div>
-    <div class="sb-add" onclick="toggleAddForm()">
-      <i class="ti ti-plus" style="font-size:14px;color:var(--text3);"></i>
-      <span>Add teacher</span>
-    </div>
-    <div class="add-form" id="add-form">
-      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;">Full name</div>
-      <input id="fn" placeholder="e.g. Richard Jordan" />
-      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;">Ministry / church</div>
-      <input id="fm" placeholder="e.g. Grace Impact Ministries" />
-      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;">Initials (2-3 letters)</div>
-      <input id="fi" placeholder="e.g. RJ" maxlength="3" style="width:80px;" />
-      <div class="add-form-row" style="margin-top:4px;">
-        <button class="btn primary" onclick="addTeacher()" style="flex:1;">Add teacher</button>
-        <button class="btn" onclick="toggleAddForm()">Cancel</button>
+    <div class="sb-footer">
+      <div class="sb-add" onclick="toggleAddForm()">
+        <i class="ti ti-plus" style="font-size:15px;color:#888;"></i>
+        <span>Add teacher</span>
+      </div>
+      <div class="add-form" id="add-form">
+        <label>Full name</label>
+        <input id="fn" placeholder="e.g. Richard Jordan"/>
+        <label>Ministry or church</label>
+        <input id="fm" placeholder="e.g. Grace Impact Ministries"/>
+        <label>Initials</label>
+        <input id="fi" placeholder="e.g. RJ" maxlength="3" style="width:80px;"/>
+        <div class="add-row">
+          <button class="btn green" onclick="addTeacher()" style="flex:1;">Add teacher</button>
+          <button class="btn" onclick="toggleAddForm()">Cancel</button>
+        </div>
       </div>
     </div>
-    <input type="file" id="file-input" multiple accept=".txt,.md" onchange="handleFiles(this.files)" />
+    <input type="file" id="file-input" multiple accept=".txt,.md" style="display:none;" onchange="handleFiles(this.files)"/>
   </div>
-
   <div class="main">
-
-    <!-- SEARCH PANEL -->
     <div class="panel active" id="panel-search">
       <div class="toolbar">
         <div class="search-row">
-          <input class="search-input" id="q-search" placeholder="Ask any theological question across your uploaded transcripts..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doSearch();}" />
-          <button class="btn primary" onclick="doSearch()"><i class="ti ti-search"></i>Search</button>
+          <input class="search-input" id="q-search" placeholder="Ask any theological question across your uploaded transcripts..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doSearch();}"/>
+          <button class="btn green" onclick="doSearch()"><i class="ti ti-search"></i>Search</button>
           <button class="btn" onclick="doSummarize()"><i class="ti ti-list"></i>Summarize</button>
         </div>
         <div class="scope-row">
@@ -185,31 +170,28 @@ input[type=file]{display:none;}
         <div class="empty" id="empty-search">
           <i class="ti ti-bible"></i>
           <div class="empty-t">Ready to search</div>
-          <div class="empty-s">Select a teacher in the left panel, upload their transcript .txt files, then ask any question.</div>
+          <div class="empty-s">Select a teacher, upload their .txt transcript files, then ask any question.</div>
         </div>
       </div>
     </div>
-
-    <!-- COMPARE PANEL -->
     <div class="panel" id="panel-compare">
       <div class="cmp-bar">
-        <span class="cmp-lbl">Select teachers to compare:</span>
+        <span style="font-size:11px;color:#888;">Select teachers to compare:</span>
         <div class="chips" id="compare-chips"></div>
       </div>
       <div class="toolbar">
         <div class="search-row">
-          <input class="search-input" id="q-compare" placeholder="Ask a question — answers shown side by side per teacher..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doCompare();}" />
-          <button class="btn primary" onclick="doCompare()"><i class="ti ti-columns"></i>Compare</button>
+          <input class="search-input" id="q-compare" placeholder="Ask a question to see each teacher's answer side by side..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doCompare();}"/>
+          <button class="btn green" onclick="doCompare()"><i class="ti ti-columns"></i>Compare</button>
         </div>
         <div class="topics">
-          <span class="pill" onclick="document.getElementById('q-compare').value='What does each teacher say about soul sleep?'">Soul sleep</span>
-          <span class="pill" onclick="document.getElementById('q-compare').value='What does each teacher say about the Bride of Christ?'">Bride of Christ</span>
-          <span class="pill" onclick="document.getElementById('q-compare').value='What does each teacher say about kenosis and the deity of Christ?'">Kenosis</span>
-          <span class="pill" onclick="document.getElementById('q-compare').value='What does each teacher say about when the Body of Christ began?'">Body of Christ origin</span>
-          <span class="pill" onclick="document.getElementById('q-compare').value='What does each teacher say about the rapture?'">Rapture</span>
-          <span class="pill" onclick="document.getElementById('q-compare').value='What does each teacher say about water baptism?'">Water baptism</span>
-          <span class="pill" onclick="document.getElementById('q-compare').value='What does each teacher say about the mystery revealed to Paul?'">The mystery</span>
-          <span class="pill" onclick="document.getElementById('q-compare').value='What does each teacher say about sonship edification?'">Sonship edification</span>
+          <span class="pill" onclick="setCompareQ('What does each teacher say about soul sleep?')">Soul sleep</span>
+          <span class="pill" onclick="setCompareQ('What does each teacher say about the Bride of Christ?')">Bride of Christ</span>
+          <span class="pill" onclick="setCompareQ('What does each teacher say about kenosis?')">Kenosis</span>
+          <span class="pill" onclick="setCompareQ('What does each teacher say about when the Body of Christ began?')">Body of Christ origin</span>
+          <span class="pill" onclick="setCompareQ('What does each teacher say about the rapture?')">Rapture</span>
+          <span class="pill" onclick="setCompareQ('What does each teacher say about water baptism?')">Water baptism</span>
+          <span class="pill" onclick="setCompareQ('What does each teacher say about the mystery revealed to Paul?')">The mystery</span>
         </div>
       </div>
       <div class="results" id="results-compare">
@@ -220,8 +202,6 @@ input[type=file]{display:none;}
         </div>
       </div>
     </div>
-
-    <!-- HISTORY PANEL -->
     <div class="panel" id="panel-history">
       <div class="toolbar" style="display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:14px;font-weight:500;">Search history</span>
@@ -231,567 +211,419 @@ input[type=file]{display:none;}
         <div class="empty" id="empty-history">
           <i class="ti ti-history"></i>
           <div class="empty-t">No history yet</div>
-          <div class="empty-s">Your searches will be saved here automatically. Click any entry to re-run it.</div>
+          <div class="empty-s">Your searches will be saved here automatically.</div>
         </div>
       </div>
     </div>
-
-    <!-- NOTES PANEL -->
     <div class="panel" id="panel-notes">
       <div class="notes-tb">
-        <button class="btn primary" onclick="newNote()"><i class="ti ti-plus"></i>New note</button>
-        <input class="notes-title" id="note-title" placeholder="Note title..." oninput="saveCurrentNote()" />
-        <select class="notes-tag" id="note-tag" onchange="saveCurrentNote()">
+        <button class="btn green" onclick="newNote()"><i class="ti ti-plus"></i>New note</button>
+        <input class="notes-title" id="note-title" placeholder="Note title..." oninput="saveNote()"/>
+        <select class="notes-tag" id="note-tag" onchange="saveNote()">
           <option value="">No tag</option>
-          <option value="David Reid">David Reid</option>
-          <option value="Les Feldick">Les Feldick</option>
-          <option value="Steve Atwood">Steve Atwood</option>
-          <option value="Mark Gabert">Mark Gabert</option>
-          <option value="Justin Johnson">Justin Johnson</option>
-          <option value="Bryan Ross">Bryan Ross</option>
-          <option value="Doctrine">Doctrine</option>
-          <option value="Soul sleep">Soul sleep</option>
-          <option value="Rapture">Rapture</option>
-          <option value="The mystery">The mystery</option>
-          <option value="Israel">Israel</option>
-          <option value="KJV">KJV</option>
-          <option value="General">General</option>
+          <option>David Reid</option><option>Les Feldick</option><option>Steve Atwood</option>
+          <option>Mark Gabert</option><option>Justin Johnson</option><option>Bryan Ross</option>
+          <option>Doctrine</option><option>Soul sleep</option><option>Rapture</option>
+          <option>The mystery</option><option>Israel</option><option>KJV</option><option>General</option>
         </select>
-        <button class="btn" onclick="deleteCurrentNote()"><i class="ti ti-trash"></i></button>
-        <button class="btn" onclick="saveCurrentNote()" style="margin-left:auto;"><i class="ti ti-device-floppy"></i>Save</button>
+        <button class="btn" onclick="deleteNote()"><i class="ti ti-trash"></i></button>
+        <button class="btn" onclick="saveNote()" style="margin-left:auto;"><i class="ti ti-device-floppy"></i>Save</button>
       </div>
       <div class="notes-body">
         <div class="notes-list" id="notes-list"></div>
-        <div class="note-editor" id="note-editor-wrap">
-          <div class="note-empty" id="note-empty">
-            <i class="ti ti-notes" style="font-size:28px;"></i>
-            <span style="font-size:13px;">Select a note or create a new one</span>
-          </div>
-          <textarea class="note-ta" id="note-body" placeholder="Write your notes here... KJV references, teacher insights, doctrinal observations..." oninput="saveCurrentNote()" style="display:none;"></textarea>
+        <div class="note-editor">
+          <div class="note-empty" id="note-empty"><i class="ti ti-notes" style="font-size:32px;"></i><span style="font-size:13px;">Select or create a note</span></div>
+          <textarea class="note-ta" id="note-body" placeholder="Write your notes here..." oninput="saveNote()" style="display:none;"></textarea>
         </div>
       </div>
     </div>
-
-    <div class="statusbar" id="statusbar">
-      <i class="ti ti-info-circle"></i>
-      <span id="status-text">Ready — select a teacher and upload transcripts to begin</span>
-    </div>
-
+    <div class="statusbar" id="statusbar"><i class="ti ti-info-circle"></i><span id="status-text">Ready — select a teacher and upload transcripts to begin</span></div>
   </div>
 </div>
 </div>
-
 <script>
-const COLORS = [
+const COLORS=[
   {bg:'#9FE1CB',fg:'#085041'},{bg:'#B5D4F4',fg:'#0C447C'},{bg:'#FAC775',fg:'#633806'},
   {bg:'#F4C0D1',fg:'#72243E'},{bg:'#C0DD97',fg:'#27500A'},{bg:'#AFA9EC',fg:'#3C3489'},
   {bg:'#F0997B',fg:'#712B13'},{bg:'#97C459',fg:'#173404'}
 ];
 
-const TEACHERS = [
-  {id:'reid',   name:'David Reid',    ministry:'Columbus Bible Church',        initials:'DR', ...COLORS[0], files:{}, on:false},
-  {id:'feldick',name:'Les Feldick',   ministry:'Through the Bible',            initials:'LF', ...COLORS[1], files:{}, on:false},
-  {id:'atwood', name:'Steve Atwood',  ministry:'Grace Bible Church Chattanooga',initials:'SA', ...COLORS[2], files:{}, on:false},
-  {id:'gabert', name:'Mark Gabert',   ministry:'Gracepoint Bible Church',      initials:'MG', ...COLORS[3], files:{}, on:false},
-  {id:'johnson',name:'Justin Johnson',ministry:'Grace Ambassadors',            initials:'JJ', ...COLORS[4], files:{}, on:false},
-  {id:'ross',   name:'Bryan Ross',    ministry:'Grace Life Bible Church',      initials:'BR', ...COLORS[5], files:{}, on:false},
+const TEACHERS=[
+  {id:'reid',   name:'David Reid',    ministry:'Columbus Bible Church',         initials:'DR', bg:'#9FE1CB',fg:'#085041', files:{},on:false},
+  {id:'feldick',name:'Les Feldick',   ministry:'Through the Bible',             initials:'LF', bg:'#B5D4F4',fg:'#0C447C', files:{},on:false},
+  {id:'atwood', name:'Steve Atwood',  ministry:'Grace Bible Church Chattanooga',initials:'SA', bg:'#FAC775',fg:'#633806', files:{},on:false},
+  {id:'gabert', name:'Mark Gabert',   ministry:'Gracepoint Bible Church',       initials:'MG', bg:'#F4C0D1',fg:'#72243E', files:{},on:false},
+  {id:'johnson',name:'Justin Johnson',ministry:'Grace Ambassadors',             initials:'JJ', bg:'#C0DD97',fg:'#27500A', files:{},on:false},
+  {id:'ross',   name:'Bryan Ross',    ministry:'Grace Life Bible Church',       initials:'BR', bg:'#AFA9EC',fg:'#3C3489', files:{},on:false}
 ];
 
-const TOPICS = [
-  'Soul sleep','Bride of Christ','Kenosis','Rapture','The mystery','Water baptism',
-  'Israel vs Body of Christ','Acts 9','Rightly dividing','Millennium',
-  'Fullness of times','Kingdom of priests','Paul in Arabia','1 John 5:7'
-];
+const TOPICS=['Soul sleep','Bride of Christ','Kenosis','Rapture','The mystery','Water baptism','Israel vs Body of Christ','Acts 9','Rightly dividing','Millennium','Fullness of times','Kingdom of priests'];
 
-let activeId = 'reid';
-let scope = 'all';
-let searchHistory = [];
-let notes = [];
-let activeNoteId = null;
-let saveTimer = null;
+let activeId='reid', scope='all', searchHistory=[], notes=[], activeNoteId=null, saveTimer=null;
 
-// ── API helpers ──────────────────────────────────────────────────────────────
-async function api(method, path, body) {
-  const opts = { method, headers: {'Content-Type':'application/json'} };
-  if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(path, opts);
+async function api(method,path,body){
+  const opts={method,headers:{'Content-Type':'application/json'}};
+  if(body) opts.body=JSON.stringify(body);
+  const r=await fetch(path,opts);
   return r.json();
 }
 
-async function callClaude(prompt) {
-  const data = await api('POST', '/api/claude', {
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 1000,
-    messages: [{ role: 'user', content: prompt }]
-  });
-  if (data.error) throw new Error(data.error);
-  return data.content?.[0]?.text || 'No response.';
+async function callClaude(prompt){
+  const data=await api('POST','/api/claude',{model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]});
+  if(data.error) throw new Error(data.error);
+  return data.content?.[0]?.text||'No response.';
 }
 
-// ── Load persistent data ─────────────────────────────────────────────────────
-async function loadData() {
-  try {
-    const [h, n] = await Promise.all([api('GET','/api/history'), api('GET','/api/notes')]);
-    searchHistory = Array.isArray(h) ? h : [];
-    notes = Array.isArray(n) ? n : [];
-    renderHistory();
-    renderNotesList();
-    updateBadges();
-  } catch(e) { console.error('Load error:', e); }
+async function loadData(){
+  try{
+    const [h,n]=await Promise.all([api('GET','/api/history'),api('GET','/api/notes')]);
+    searchHistory=Array.isArray(h)?h:[];
+    notes=Array.isArray(n)?n:[];
+    renderHistory();renderNotesList();updateBadges();
+  }catch(e){console.error('Load error:',e);}
 }
 
-// ── Status bar ───────────────────────────────────────────────────────────────
-function setStatus(msg, loading) {
-  document.getElementById('statusbar').innerHTML = loading
-    ? `<i class="ti ti-loader spin"></i><span>${msg}</span>`
-    : `<i class="ti ti-info-circle"></i><span>${msg}</span>`;
+function setStatus(msg,loading){
+  document.getElementById('statusbar').innerHTML=loading
+    ?'<i class="ti ti-loader spin"></i><span>'+msg+'</span>'
+    :'<i class="ti ti-info-circle"></i><span>'+msg+'</span>';
 }
 
-// ── Teacher list ─────────────────────────────────────────────────────────────
-function renderTeacherList() {
-  const list = document.getElementById('teacher-list');
-  list.innerHTML = '';
-  let totalFiles = 0, totalActive = 0;
-  TEACHERS.forEach(t => {
-    const cnt = Object.keys(t.files).length;
-    totalFiles += cnt;
-    if (cnt > 0) totalActive++;
+function renderTeacherList(){
+  const list=document.getElementById('teacher-list');
+  list.innerHTML='';
+  let totalFiles=0,totalActive=0;
+  TEACHERS.forEach(function(t){
+    const cnt=Object.keys(t.files).length;
+    totalFiles+=cnt;
+    if(cnt>0) totalActive++;
+    const el=document.createElement('div');
+    el.className='t-item'+(t.id===activeId?' active':'');
+    el.onclick=function(){selectTeacher(t.id);};
 
-    const el = document.createElement('div');
-    el.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-left:3px solid transparent;';
-    if (t.id === activeId) { el.style.background = '#f5f5f5'; el.style.borderLeftColor = '#1a6b3a'; }
-    el.onmouseover = () => { if(t.id !== activeId) el.style.background = '#f5f5f5'; };
-    el.onmouseout  = () => { if(t.id !== activeId) el.style.background = ''; };
-    el.onclick = () => selectTeacher(t.id);
+    const av=document.createElement('div');
+    av.className='t-avatar';
+    av.style.background=t.bg;
+    av.style.color=t.fg;
+    av.textContent=t.initials;
 
-    // Avatar circle
-    const av = document.createElement('div');
-    av.style.cssText = 'width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;';
-    av.style.background = t.bg;
-    av.style.color = t.fg;
-    av.textContent = t.initials;
+    const info=document.createElement('div');
+    info.style.flex='1';
 
-    // Name + count wrapper
-    const info = document.createElement('div');
-    info.style.cssText = 'flex:1;min-width:0;';
+    const nameDiv=document.createElement('div');
+    nameDiv.className='t-name';
+    nameDiv.textContent=t.name;
 
-    const nameEl = document.createElement('div');
-    nameEl.style.cssText = 'font-size:13px;font-weight:600;color:#1a1a1a;line-height:1.4;word-break:break-word;';
-    nameEl.textContent = t.name;
+    const minDiv=document.createElement('div');
+    minDiv.className='t-ministry';
+    minDiv.textContent=t.ministry;
 
-    const countEl = document.createElement('div');
-    countEl.style.cssText = 'font-size:11px;color:#888;margin-top:2px;';
-    countEl.textContent = cnt > 0 ? cnt + ' transcript' + (cnt !== 1 ? 's' : '') : 'No transcripts';
+    const cntDiv=document.createElement('div');
+    cntDiv.className='t-count';
+    cntDiv.textContent=cnt>0?cnt+' transcript'+(cnt!==1?'s':''):'No transcripts';
 
-    info.appendChild(nameEl);
-    info.appendChild(countEl);
+    info.appendChild(nameDiv);
+    info.appendChild(minDiv);
+    info.appendChild(cntDiv);
 
-    // Action buttons
-    const actions = document.createElement('div');
-    actions.style.cssText = 'display:none;gap:4px;flex-shrink:0;';
-    actions.innerHTML = '<button style="background:none;border:none;cursor:pointer;padding:3px 5px;color:#888;font-size:13px;border-radius:4px;" title="Upload transcripts" onclick="event.stopPropagation();uploadFor('' + t.id + '')"><i class="ti ti-upload"></i></button><button style="background:none;border:none;cursor:pointer;padding:3px 5px;color:#888;font-size:13px;border-radius:4px;" title="Clear transcripts" onclick="event.stopPropagation();clearTeacher('' + t.id + '')"><i class="ti ti-trash"></i></button>';
-    el.onmouseover = () => { el.style.background = '#f5f5f5'; actions.style.display = 'flex'; };
-    el.onmouseout  = () => { if(t.id !== activeId) el.style.background = ''; actions.style.display = 'none'; };
+    const actions=document.createElement('div');
+    actions.className='t-actions';
+    actions.innerHTML='<button class="icon-btn" title="Upload" onclick="event.stopPropagation();uploadFor(\''+t.id+'\')"><i class="ti ti-upload"></i></button><button class="icon-btn" title="Clear" onclick="event.stopPropagation();clearTeacher(\''+t.id+'\')"><i class="ti ti-trash"></i></button>';
 
     el.appendChild(av);
     el.appendChild(info);
     el.appendChild(actions);
     list.appendChild(el);
   });
-  document.getElementById('total-files').textContent = totalFiles;
-  document.getElementById('total-teachers').textContent = totalActive;
+  document.getElementById('total-files').textContent=totalFiles;
+  document.getElementById('total-teachers').textContent=totalActive;
   renderCompareChips();
 }
 
-function selectTeacher(id) {
-  activeId = id;
+function selectTeacher(id){
+  activeId=id;
   renderTeacherList();
-  const t = TEACHERS.find(x => x.id === id);
-  const cnt = Object.keys(t.files).length;
-  setStatus(`${t.name} selected — ${cnt} transcript${cnt !== 1 ? 's' : ''} loaded`);
+  const t=TEACHERS.find(function(x){return x.id===id;});
+  const cnt=Object.keys(t.files).length;
+  setStatus(t.name+' selected — '+cnt+' transcript'+(cnt!==1?'s':'')+' loaded');
 }
 
-function uploadFor(id) {
-  activeId = id;
-  document.getElementById('file-input').click();
-}
+function uploadFor(id){activeId=id;document.getElementById('file-input').click();}
 
-function handleFiles(fileList) {
-  const t = TEACHERS.find(x => x.id === activeId);
-  let done = 0;
-  const total = fileList.length;
-  Array.from(fileList).forEach(f => {
-    const r = new FileReader();
-    r.onload = e => {
-      t.files[f.name] = e.target.result;
+function handleFiles(fileList){
+  const t=TEACHERS.find(function(x){return x.id===activeId;});
+  let done=0;const total=fileList.length;
+  Array.from(fileList).forEach(function(f){
+    const r=new FileReader();
+    r.onload=function(e){
+      t.files[f.name]=e.target.result;
       done++;
-      if (done === total) {
-        renderTeacherList();
-        const cnt = Object.keys(t.files).length;
-        setStatus(`${t.name} — ${cnt} transcript${cnt !== 1 ? 's' : ''} loaded`);
-        document.getElementById('empty-search').style.display = 'none';
-      }
+      if(done===total){renderTeacherList();setStatus(t.name+' — '+Object.keys(t.files).length+' transcripts loaded');document.getElementById('empty-search').style.display='none';}
     };
     r.readAsText(f);
   });
-  document.getElementById('file-input').value = '';
+  document.getElementById('file-input').value='';
 }
 
-function clearTeacher(id) {
-  TEACHERS.find(x => x.id === id).files = {};
-  renderTeacherList();
-  setStatus('Transcripts cleared');
+function clearTeacher(id){TEACHERS.find(function(x){return x.id===id;}).files={};renderTeacherList();setStatus('Transcripts cleared');}
+
+function showPanel(p){
+  document.querySelectorAll('.panel').forEach(function(x){x.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
+  document.getElementById('panel-'+p).classList.add('active');
+  document.getElementById('tab-'+p).classList.add('active');
 }
 
-// ── Panels ───────────────────────────────────────────────────────────────────
-function showPanel(p) {
-  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-  document.getElementById('panel-' + p).classList.add('active');
-  document.getElementById('tab-' + p).classList.add('active');
+function setScope(s){
+  scope=s;
+  document.getElementById('sc-all').className='pill'+(s==='all'?' on':'');
+  document.getElementById('sc-cur').className='pill'+(s==='current'?' on':'');
 }
 
-// ── Scope ────────────────────────────────────────────────────────────────────
-function setScope(s) {
-  scope = s;
-  document.getElementById('sc-all').className = 'pill' + (s === 'all' ? ' on' : '');
-  document.getElementById('sc-cur').className = 'pill' + (s === 'current' ? ' on' : '');
-}
-
-// ── Quick topics ─────────────────────────────────────────────────────────────
-function buildQuickTopics() {
-  const el = document.getElementById('quick-topics');
-  el.innerHTML = '';
-  TOPICS.forEach(topic => {
-    const span = document.createElement('span');
-    span.className = 'pill';
-    span.textContent = topic;
-    span.onclick = () => quickSearch(topic);
+function buildQuickTopics(){
+  const el=document.getElementById('quick-topics');
+  TOPICS.forEach(function(topic){
+    const span=document.createElement('span');
+    span.className='pill';
+    span.textContent=topic;
+    span.onclick=function(){quickSearch(topic);};
     el.appendChild(span);
   });
 }
 
-function quickSearch(topic) {
-  const t = TEACHERS.find(x => x.id === activeId);
-  const q = scope === 'all'
-    ? `What do these teachers teach about ${topic}?`
-    : `What does ${t.name} teach about ${topic}?`;
-  document.getElementById('q-search').value = q;
+function quickSearch(topic){
+  const t=TEACHERS.find(function(x){return x.id===activeId;});
+  document.getElementById('q-search').value=(scope==='all'?'What do these teachers teach about ':'What does '+t.name+' teach about ')+topic+'?';
   doSearch();
 }
 
-// ── Context builder ──────────────────────────────────────────────────────────
-function getContext(scopeOverride) {
-  const s = scopeOverride || scope;
-  const teachers = s === 'all' ? TEACHERS : TEACHERS.filter(x => x.id === activeId);
-  return teachers.filter(t => Object.keys(t.files).length > 0).map(t => {
-    const combined = Object.entries(t.files).map(([n, c]) => `--- ${n} ---\n${c}`).join('\n\n');
-    const trunc = combined.length > 22000 ? combined.substring(0, 22000) + '\n[truncated]' : combined;
-    return { teacher: t, content: trunc };
+function setCompareQ(q){document.getElementById('q-compare').value=q;}
+
+function getContext(scopeOverride){
+  const s=scopeOverride||scope;
+  const teachers=s==='all'?TEACHERS:TEACHERS.filter(function(x){return x.id===activeId;});
+  return teachers.filter(function(t){return Object.keys(t.files).length>0;}).map(function(t){
+    const combined=Object.entries(t.files).map(function(e){return '--- '+e[0]+' ---\n'+e[1];}).join('\n\n');
+    return {teacher:t,content:combined.length>22000?combined.substring(0,22000)+'\n[truncated]':combined};
   });
 }
 
-// ── Search ───────────────────────────────────────────────────────────────────
-async function doSearch() {
-  const q = document.getElementById('q-search').value.trim();
-  if (!q) return;
-  const ctx = getContext();
-  if (ctx.length === 0) { setStatus('No transcripts loaded — upload files first'); return; }
-  setStatus('Searching transcripts...', true);
-  document.getElementById('empty-search').style.display = 'none';
-  const rl = document.getElementById('results-search');
-  rl.innerHTML = '';
-  const contextText = ctx.map(x => `=== ${x.teacher.name} (${x.teacher.ministry}) ===\n${x.content}`).join('\n\n');
-  const prompt = `You are analyzing Bible teaching transcripts from Mid-Acts Dispensational teachers using the King James Bible.\n\nTeachers and transcripts:\n${contextText}\n\nQuestion: ${q}\n\nAnswer based ONLY on these transcripts. Compare views across teachers where relevant. Quote directly using teacher names. Use KJV references as they appear in the transcripts.`;
-  try {
-    const ans = await callClaude(prompt);
-    const badges = ctx.map(x => `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;background:${x.teacher.bg};color:${x.teacher.fg};margin-right:4px;">${x.teacher.name}</span>`).join('');
-    const card = document.createElement('div');
-    card.className = 'rcard';
-    card.innerHTML = `
-      <div class="rcard-head">
-        <i class="ti ti-search" style="font-size:14px;color:var(--text3);"></i>
-        <span class="rcard-teacher">${escHtml(q)}</span>
-        <button class="btn rcard-meta" onclick="saveSearchAsNote(${JSON.stringify(q)}, ${JSON.stringify(ans.substring(0, 300))})"><i class="ti ti-notes"></i>Save to notes</button>
-      </div>
-      <div style="margin-bottom:10px;">${badges}</div>
-      <div class="rcard-text">${escHtml(ans)}</div>
-    `;
+async function doSearch(){
+  const q=document.getElementById('q-search').value.trim();
+  if(!q) return;
+  const ctx=getContext();
+  if(ctx.length===0){setStatus('No transcripts loaded — upload files first');return;}
+  setStatus('Searching transcripts...',true);
+  document.getElementById('empty-search').style.display='none';
+  const rl=document.getElementById('results-search');
+  rl.innerHTML='';
+  const contextText=ctx.map(function(x){return '=== '+x.teacher.name+' ('+x.teacher.ministry+') ===\n'+x.content;}).join('\n\n');
+  const prompt='You are analyzing Bible teaching transcripts from Mid-Acts Dispensational teachers using the King James Bible.\n\nTeachers and transcripts:\n'+contextText+'\n\nQuestion: '+q+'\n\nAnswer based ONLY on these transcripts. Compare views across teachers where relevant. Quote directly using teacher names. Use KJV references as they appear.';
+  try{
+    const ans=await callClaude(prompt);
+    const card=document.createElement('div');
+    card.className='rcard';
+    const badges=ctx.map(function(x){return '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;background:'+x.teacher.bg+';color:'+x.teacher.fg+';margin-right:4px;">'+x.teacher.name+'</span>';}).join('');
+    card.innerHTML='<div class="rcard-head"><i class="ti ti-search" style="font-size:14px;color:#888;"></i><span class="rcard-q">'+escHtml(q)+'</span><button class="btn" style="font-size:11px;" onclick="saveSearchAsNote(\''+escAttr(q)+'\',\''+escAttr(ans.substring(0,300))+'\')"><i class="ti ti-notes"></i>Save to notes</button></div><div style="margin-bottom:10px;">'+badges+'</div><div class="rcard-text">'+escHtml(ans)+'</div>';
     rl.appendChild(card);
-    const names = ctx.map(x => x.teacher.name).join(', ');
-    await addHistory(q, scope === 'all' ? 'All teachers' : 'Current teacher', names, 'search');
-    setStatus(`Search complete — ${ctx.length} teacher${ctx.length !== 1 ? 's' : ''} searched`);
-  } catch(e) {
-    setStatus('Error — ' + e.message);
-  }
+    await addHistory(q,scope==='all'?'All teachers':'Current teacher',ctx.map(function(x){return x.teacher.name;}).join(', '),'search');
+    setStatus('Search complete — '+ctx.length+' teacher'+(ctx.length!==1?'s':'')+' searched');
+  }catch(e){setStatus('Error: '+e.message);}
 }
 
-async function doSummarize() {
-  const t = TEACHERS.find(x => x.id === activeId);
-  const files = Object.entries(t.files);
-  if (files.length === 0) { setStatus('No transcripts for ' + t.name); return; }
-  document.getElementById('q-search').value = 'Summary';
-  setStatus('Summarizing...', true);
-  document.getElementById('empty-search').style.display = 'none';
-  const rl = document.getElementById('results-search');
-  rl.innerHTML = '';
-  const combined = files.map(([n, c]) => `--- ${n} ---\n${c}`).join('\n\n');
-  const trunc = combined.length > 40000 ? combined.substring(0, 40000) + '\n[truncated]' : combined;
-  const prompt = `You are analyzing transcripts from ${t.name}, a Mid-Acts Dispensational teacher using the King James Bible.\n\n${trunc}\n\nProvide a comprehensive summary organized by doctrinal topic. Include KJV Scripture references as used. Mid-Acts Dispensational perspective.`;
-  try {
-    const ans = await callClaude(prompt);
-    const card = document.createElement('div');
-    card.className = 'rcard';
-    card.innerHTML = `
-      <div class="rcard-head">
-        <div class="av" style="background:${t.bg};color:${t.fg};width:24px;height:24px;font-size:10px;">${t.initials}</div>
-        <span class="rcard-teacher">${t.name} — summary</span>
-        <button class="btn rcard-meta" onclick="saveSearchAsNote(${JSON.stringify(t.name + ' Summary')}, ${JSON.stringify(ans.substring(0, 300))})"><i class="ti ti-notes"></i>Save to notes</button>
-      </div>
-      <div class="rcard-text">${escHtml(ans)}</div>
-    `;
+async function doSummarize(){
+  const t=TEACHERS.find(function(x){return x.id===activeId;});
+  const files=Object.entries(t.files);
+  if(files.length===0){setStatus('No transcripts for '+t.name);return;}
+  document.getElementById('q-search').value='Summary';
+  setStatus('Summarizing...',true);
+  document.getElementById('empty-search').style.display='none';
+  const rl=document.getElementById('results-search');rl.innerHTML='';
+  const combined=files.map(function(e){return '--- '+e[0]+' ---\n'+e[1];}).join('\n\n');
+  const trunc=combined.length>40000?combined.substring(0,40000)+'\n[truncated]':combined;
+  const prompt='You are analyzing transcripts from '+t.name+', a Mid-Acts Dispensational teacher using the King James Bible.\n\n'+trunc+'\n\nProvide a comprehensive summary organized by doctrinal topic. Include KJV Scripture references as used.';
+  try{
+    const ans=await callClaude(prompt);
+    const card=document.createElement('div');
+    card.className='rcard';
+    card.innerHTML='<div class="rcard-head"><div class="t-avatar" style="width:24px;height:24px;font-size:10px;background:'+t.bg+';color:'+t.fg+';">'+t.initials+'</div><span class="rcard-q">'+t.name+' — summary</span></div><div class="rcard-text">'+escHtml(ans)+'</div>';
     rl.appendChild(card);
-    await addHistory('Summary: ' + t.name, t.name, t.name, 'search');
-    setStatus('Summary complete for ' + t.name);
-  } catch(e) { setStatus('Error — ' + e.message); }
+    await addHistory('Summary: '+t.name,t.name,t.name,'search');
+    setStatus('Summary complete for '+t.name);
+  }catch(e){setStatus('Error: '+e.message);}
 }
 
-// ── Compare ──────────────────────────────────────────────────────────────────
-function renderCompareChips() {
-  const chips = document.getElementById('compare-chips');
-  chips.innerHTML = '';
-  const loaded = TEACHERS.filter(t => Object.keys(t.files).length > 0);
-  loaded.forEach(t => {
-    const c = document.createElement('span');
-    c.className = 'chip' + (t.on ? ' on' : '');
-    c.style.borderColor = t.on ? t.fg : '';
-    c.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${t.bg};border:1px solid ${t.fg};"></span>${t.name}`;
-    c.onclick = () => { t.on = !t.on; renderCompareChips(); updateBadges(); };
+function renderCompareChips(){
+  const chips=document.getElementById('compare-chips');
+  chips.innerHTML='';
+  TEACHERS.filter(function(t){return Object.keys(t.files).length>0;}).forEach(function(t){
+    const c=document.createElement('span');
+    c.className='chip'+(t.on?' on':'');
+    if(t.on) c.style.borderColor=t.fg;
+    c.innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:'+t.bg+';border:1px solid '+t.fg+';display:inline-block;"></span>'+t.name;
+    c.onclick=function(){t.on=!t.on;renderCompareChips();updateBadges();};
     chips.appendChild(c);
   });
-  document.getElementById('b-cmp').textContent = TEACHERS.filter(t => t.on).length;
+  document.getElementById('b-cmp').textContent=TEACHERS.filter(function(t){return t.on;}).length;
 }
 
-async function doCompare() {
-  const q = document.getElementById('q-compare').value.trim();
-  const selected = TEACHERS.filter(t => t.on && Object.keys(t.files).length > 0);
-  if (selected.length < 2) { setStatus('Select at least 2 teachers with transcripts'); return; }
-  if (!q) return;
-  setStatus('Comparing across ' + selected.length + ' teachers...', true);
-  document.getElementById('empty-compare').style.display = 'none';
-  const rl = document.getElementById('results-compare');
-  rl.innerHTML = '';
-  const cols = Math.min(selected.length, 3);
-  const grid = document.createElement('div');
-  grid.className = 'cmp-grid';
-  grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0,1fr))`;
-  const colEls = {};
-  selected.forEach(t => {
-    const col = document.createElement('div');
-    col.className = 'cmp-col';
-    col.innerHTML = `
-      <div class="cmp-col-head">
-        <div class="av" style="background:${t.bg};color:${t.fg};width:24px;height:24px;font-size:10px;">${t.initials}</div>
-        <span class="cmp-col-name">${t.name}</span>
-      </div>
-      <div class="cmp-col-text" id="cmp-${t.id}"><i class="ti ti-loader spin" style="font-size:16px;color:var(--text3);"></i></div>
-    `;
-    colEls[t.id] = col;
+async function doCompare(){
+  const q=document.getElementById('q-compare').value.trim();
+  const selected=TEACHERS.filter(function(t){return t.on&&Object.keys(t.files).length>0;});
+  if(selected.length<2){setStatus('Select at least 2 teachers with transcripts');return;}
+  if(!q) return;
+  setStatus('Comparing '+selected.length+' teachers...',true);
+  document.getElementById('empty-compare').style.display='none';
+  const rl=document.getElementById('results-compare');rl.innerHTML='';
+  const cols=Math.min(selected.length,3);
+  const grid=document.createElement('div');
+  grid.className='cmp-grid';
+  grid.style.gridTemplateColumns='repeat('+cols+',minmax(0,1fr))';
+  selected.forEach(function(t){
+    const col=document.createElement('div');col.className='cmp-col';
+    col.innerHTML='<div class="cmp-col-head"><div class="t-avatar" style="width:24px;height:24px;font-size:10px;background:'+t.bg+';color:'+t.fg+';">'+t.initials+'</div>'+t.name+'</div><div class="cmp-col-text" id="cmp-'+t.id+'"><i class="ti ti-loader spin" style="font-size:16px;color:#ccc;"></i></div>';
     grid.appendChild(col);
   });
   rl.appendChild(grid);
-  const promises = selected.map(async t => {
-    const combined = Object.entries(t.files).map(([n, c]) => `--- ${n} ---\n${c}`).join('\n\n');
-    const trunc = combined.length > 22000 ? combined.substring(0, 22000) + '\n[truncated]' : combined;
-    const prompt = `You are analyzing transcripts from ${t.name}, a Mid-Acts Dispensational teacher (KJV only).\n\n${trunc}\n\nQuestion: ${q}\n\nAnswer based ONLY on these transcripts. Be concise (3-5 paragraphs). Quote directly. KJV references only.`;
-    const ans = await callClaude(prompt);
-    document.getElementById('cmp-' + t.id).textContent = ans;
-  });
-  try {
-    await Promise.all(promises);
-    const names = selected.map(t => t.name).join(', ');
-    await addHistory(q, 'Compare', names, 'compare');
-    setStatus('Compare complete — ' + selected.length + ' teachers');
-  } catch(e) { setStatus('Error comparing — ' + e.message); }
+  await Promise.all(selected.map(async function(t){
+    const combined=Object.entries(t.files).map(function(e){return '--- '+e[0]+' ---\n'+e[1];}).join('\n\n');
+    const trunc=combined.length>22000?combined.substring(0,22000)+'\n[truncated]':combined;
+    const ans=await callClaude('You are analyzing transcripts from '+t.name+', a Mid-Acts Dispensational teacher (KJV only).\n\n'+trunc+'\n\nQuestion: '+q+'\n\nAnswer concisely (3-5 paragraphs) based ONLY on these transcripts.');
+    document.getElementById('cmp-'+t.id).textContent=ans;
+  }));
+  await addHistory(q,'Compare',selected.map(function(t){return t.name;}).join(', '),'compare');
+  setStatus('Compare complete');
 }
 
-// ── History ───────────────────────────────────────────────────────────────────
-async function addHistory(query, scope, teachers, mode) {
-  const entry = { id: Date.now(), query, scope, teachers, mode, ts: new Date().toISOString() };
-  await api('POST', '/api/history', entry);
+async function addHistory(query,scope,teachers,mode){
+  const entry={id:Date.now(),query:query,scope:scope,teachers:teachers,mode:mode,ts:new Date().toISOString()};
+  await api('POST','/api/history',entry);
   searchHistory.unshift(entry);
-  renderHistory();
-  updateBadges();
+  renderHistory();updateBadges();
 }
 
-function renderHistory() {
-  const list = document.getElementById('history-list');
-  const empty = document.getElementById('empty-history');
-  if (searchHistory.length === 0) { empty.style.display = 'flex'; list.querySelectorAll('.hitem').forEach(e=>e.remove()); return; }
-  empty.style.display = 'none';
-  list.innerHTML = '';
-  searchHistory.forEach(h => {
-    const d = new Date(h.ts);
-    const ds = d.toLocaleDateString() + ' ' + d.toLocaleTimeString(undefined, {hour:'2-digit',minute:'2-digit'});
-    const el = document.createElement('div');
-    el.className = 'hitem';
-    el.innerHTML = `
-      <i class="ti ti-${h.mode === 'compare' ? 'columns' : 'search'}"></i>
-      <div style="flex:1;min-width:0;">
-        <div class="hitem-q">${escHtml(h.query)}</div>
-        <div class="hitem-meta">${ds} &middot; ${escHtml(h.teachers)}</div>
-      </div>
-      <div class="hitem-right">
-        <span class="scope-tag">${escHtml(h.scope)}</span>
-        <button class="btn" onclick="rerunSearch(${h.id})" title="Re-run"><i class="ti ti-refresh"></i></button>
-        <button class="btn" onclick="removeHistory(${h.id})" title="Delete"><i class="ti ti-trash"></i></button>
-      </div>
-    `;
+function renderHistory(){
+  const list=document.getElementById('history-list');
+  const empty=document.getElementById('empty-history');
+  if(searchHistory.length===0){empty.style.display='flex';list.querySelectorAll('.hitem').forEach(function(e){e.remove();});return;}
+  empty.style.display='none';list.innerHTML='';
+  searchHistory.forEach(function(h){
+    const d=new Date(h.ts);
+    const ds=d.toLocaleDateString()+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    const el=document.createElement('div');el.className='hitem';
+    el.innerHTML='<i class="ti ti-'+(h.mode==='compare'?'columns':'search')+'" style="font-size:15px;color:#888;margin-top:2px;"></i><div style="flex:1;min-width:0;"><div class="hitem-q">'+escHtml(h.query)+'</div><div class="hitem-meta">'+ds+' &middot; '+escHtml(h.teachers)+'</div></div><div class="hitem-right"><span class="scope-tag">'+escHtml(h.scope)+'</span><button class="btn" onclick="rerunSearch('+h.id+')" title="Re-run"><i class="ti ti-refresh"></i></button><button class="btn" onclick="removeHistory('+h.id+')" title="Delete"><i class="ti ti-trash"></i></button></div>';
     list.appendChild(el);
   });
 }
 
-function rerunSearch(id) {
-  const h = searchHistory.find(x => x.id == id);
-  if (!h) return;
-  if (h.mode === 'compare') { showPanel('compare'); document.getElementById('q-compare').value = h.query; doCompare(); }
-  else { showPanel('search'); document.getElementById('q-search').value = h.query; doSearch(); }
+function rerunSearch(id){
+  const h=searchHistory.find(function(x){return x.id==id;});
+  if(!h) return;
+  if(h.mode==='compare'){showPanel('compare');document.getElementById('q-compare').value=h.query;doCompare();}
+  else{showPanel('search');document.getElementById('q-search').value=h.query;doSearch();}
 }
 
-async function removeHistory(id) {
-  await api('DELETE', '/api/history/' + id);
-  searchHistory = searchHistory.filter(x => x.id != id);
-  renderHistory(); updateBadges();
+async function removeHistory(id){
+  await api('DELETE','/api/history/'+id);
+  searchHistory=searchHistory.filter(function(x){return x.id!=id;});
+  renderHistory();updateBadges();
 }
 
-async function clearHistory() {
-  await api('DELETE', '/api/history');
-  searchHistory = [];
-  renderHistory(); updateBadges();
+async function clearHistory(){
+  await api('DELETE','/api/history');
+  searchHistory=[];renderHistory();updateBadges();
 }
 
-// ── Notes ─────────────────────────────────────────────────────────────────────
-function newNote() {
-  const note = { id: Date.now(), title: 'New note', body: '', tag: '', created: new Date().toISOString(), updated: new Date().toISOString() };
-  notes.unshift(note);
-  activeNoteId = note.id;
-  api('POST', '/api/notes', note);
-  renderNotesList(); openNote(note.id); updateBadges();
+function newNote(){
+  const note={id:Date.now(),title:'New note',body:'',tag:'',created:new Date().toISOString(),updated:new Date().toISOString()};
+  notes.unshift(note);activeNoteId=note.id;
+  api('POST','/api/notes',note);
+  renderNotesList();openNote(note.id);updateBadges();
 }
 
-function openNote(id) {
-  activeNoteId = id;
-  const note = notes.find(n => n.id == id);
-  if (!note) return;
-  document.getElementById('note-empty').style.display = 'none';
-  document.getElementById('note-body').style.display = 'block';
-  document.getElementById('note-title').value = note.title || '';
-  document.getElementById('note-tag').value = note.tag || '';
-  document.getElementById('note-body').value = note.body || '';
+function openNote(id){
+  activeNoteId=id;
+  const note=notes.find(function(n){return n.id==id;});
+  if(!note) return;
+  document.getElementById('note-empty').style.display='none';
+  document.getElementById('note-body').style.display='block';
+  document.getElementById('note-title').value=note.title||'';
+  document.getElementById('note-tag').value=note.tag||'';
+  document.getElementById('note-body').value=note.body||'';
   renderNotesList();
 }
 
-function saveCurrentNote() {
-  if (!activeNoteId) return;
-  if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    const note = notes.find(n => n.id == activeNoteId);
-    if (!note) return;
-    note.title = document.getElementById('note-title').value || 'Untitled';
-    note.body = document.getElementById('note-body').value;
-    note.tag = document.getElementById('note-tag').value;
-    note.updated = new Date().toISOString();
-    await api('POST', '/api/notes', note);
+function saveNote(){
+  if(!activeNoteId) return;
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer=setTimeout(async function(){
+    const note=notes.find(function(n){return n.id==activeNoteId;});
+    if(!note) return;
+    note.title=document.getElementById('note-title').value||'Untitled';
+    note.body=document.getElementById('note-body').value;
+    note.tag=document.getElementById('note-tag').value;
+    note.updated=new Date().toISOString();
+    await api('POST','/api/notes',note);
     renderNotesList();
-  }, 800);
+  },800);
 }
 
-async function deleteCurrentNote() {
-  if (!activeNoteId) return;
-  await api('DELETE', '/api/notes/' + activeNoteId);
-  notes = notes.filter(n => n.id != activeNoteId);
-  activeNoteId = null;
-  document.getElementById('note-empty').style.display = 'flex';
-  document.getElementById('note-body').style.display = 'none';
-  document.getElementById('note-title').value = '';
-  document.getElementById('note-tag').value = '';
-  renderNotesList(); updateBadges();
+async function deleteNote(){
+  if(!activeNoteId) return;
+  await api('DELETE','/api/notes/'+activeNoteId);
+  notes=notes.filter(function(n){return n.id!=activeNoteId;});
+  activeNoteId=null;
+  document.getElementById('note-empty').style.display='flex';
+  document.getElementById('note-body').style.display='none';
+  document.getElementById('note-title').value='';
+  renderNotesList();updateBadges();
 }
 
-async function saveSearchAsNote(title, preview) {
-  const note = { id: Date.now(), title: title.substring(0, 60), body: preview, tag: 'General', created: new Date().toISOString(), updated: new Date().toISOString() };
-  notes.unshift(note);
-  activeNoteId = note.id;
-  await api('POST', '/api/notes', note);
-  updateBadges();
-  showPanel('notes');
-  renderNotesList();
-  openNote(note.id);
-  setStatus('Saved to notes');
+async function saveSearchAsNote(title,preview){
+  const note={id:Date.now(),title:title.substring(0,60),body:preview,tag:'General',created:new Date().toISOString(),updated:new Date().toISOString()};
+  notes.unshift(note);activeNoteId=note.id;
+  await api('POST','/api/notes',note);
+  updateBadges();showPanel('notes');renderNotesList();openNote(note.id);setStatus('Saved to notes');
 }
 
-function renderNotesList() {
-  const list = document.getElementById('notes-list');
-  list.innerHTML = '';
-  if (notes.length === 0) {
-    list.innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:var(--text3);">No notes yet</div>';
-    return;
-  }
-  notes.forEach(n => {
-    const d = new Date(n.created);
-    const el = document.createElement('div');
-    el.className = 'nitem' + (n.id == activeNoteId ? ' active' : '');
-    el.onclick = () => openNote(n.id);
-    el.innerHTML = `
-      <div class="nitem-title">${escHtml(n.title || 'Untitled')}</div>
-      <div style="display:flex;gap:6px;align-items:center;">
-        ${n.tag ? `<span class="nitem-tag">${escHtml(n.tag)}</span>` : ''}
-        <span class="nitem-meta">${d.toLocaleDateString()}</span>
-      </div>
-    `;
+function renderNotesList(){
+  const list=document.getElementById('notes-list');list.innerHTML='';
+  if(notes.length===0){list.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:#888;">No notes yet</div>';return;}
+  notes.forEach(function(n){
+    const el=document.createElement('div');el.className='nitem'+(n.id==activeNoteId?' active':'');el.onclick=function(){openNote(n.id);};
+    el.innerHTML='<div class="nitem-title">'+(n.title||'Untitled')+'</div><div class="nitem-meta">'+(n.tag?'<span style="color:#555;">'+n.tag+'</span> &middot; ':'')+new Date(n.created).toLocaleDateString()+'</div>';
     list.appendChild(el);
   });
 }
 
-// ── Add teacher ───────────────────────────────────────────────────────────────
-function toggleAddForm() {
-  document.getElementById('add-form').classList.toggle('show');
-}
+function toggleAddForm(){document.getElementById('add-form').classList.toggle('open');}
 
-function addTeacher() {
-  const name = document.getElementById('fn').value.trim();
-  if (!name) { alert('Please enter a teacher name'); return; }
-  const raw = document.getElementById('fi').value.trim().toUpperCase();
-  const initials = raw || name.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase();
-  const ministry = document.getElementById('fm').value.trim() || 'Mid-Acts Dispensational';
-  const ci = TEACHERS.length % COLORS.length;
-  const newTeacher = { id: 't' + Date.now(), name, ministry, initials, ...COLORS[ci], files: {}, on: false };
-  TEACHERS.push(newTeacher);
-  document.getElementById('fn').value = '';
-  document.getElementById('fi').value = '';
-  document.getElementById('fm').value = '';
+function addTeacher(){
+  const name=document.getElementById('fn').value.trim();
+  if(!name){alert('Please enter a teacher name');return;}
+  const raw=document.getElementById('fi').value.trim().toUpperCase();
+  const initials=raw||name.split(' ').map(function(w){return w[0];}).join('').substring(0,3).toUpperCase();
+  const ministry=document.getElementById('fm').value.trim()||'Mid-Acts Dispensational';
+  const ci=TEACHERS.length%COLORS.length;
+  const t={id:'t'+Date.now(),name:name,ministry:ministry,initials:initials,bg:COLORS[ci].bg,fg:COLORS[ci].fg,files:{},on:false};
+  TEACHERS.push(t);
+  document.getElementById('fn').value='';document.getElementById('fi').value='';document.getElementById('fm').value='';
   toggleAddForm();
-  const sel = document.getElementById('note-tag');
-  const opt = document.createElement('option');
-  opt.value = name; opt.textContent = name;
-  sel.appendChild(opt);
-  activeId = newTeacher.id;
-  renderTeacherList();
-  setStatus(name + ' added — hover over their name and click upload to load transcripts');
+  const sel=document.getElementById('note-tag');
+  const opt=document.createElement('option');opt.value=name;opt.textContent=name;sel.appendChild(opt);
+  activeId=t.id;renderTeacherList();
+  setStatus(name+' added — hover over their name and click the upload icon to load transcripts');
 }
 
-// ── Utilities ─────────────────────────────────────────────────────────────────
-function escHtml(str) {
-  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function updateBadges(){
+  document.getElementById('b-hist').textContent=searchHistory.length;
+  document.getElementById('b-notes').textContent=notes.length;
+  document.getElementById('b-cmp').textContent=TEACHERS.filter(function(t){return t.on;}).length;
 }
 
-function updateBadges() {
-  document.getElementById('b-hist').textContent = searchHistory.length;
-  document.getElementById('b-notes').textContent = notes.length;
-  document.getElementById('b-cmp').textContent = TEACHERS.filter(t => t.on).length;
-}
+function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escAttr(s){return(s||'').replace(/'/g,"\\'").replace(/\n/g,' ').substring(0,200);}
 
-// ── Init ──────────────────────────────────────────────────────────────────────
 renderTeacherList();
 buildQuickTopics();
 loadData();
