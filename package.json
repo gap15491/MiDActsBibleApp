@@ -1,0 +1,15 @@
+{
+  "name": "mad-study-library",
+  "version": "1.0.0",
+  "description": "Mid-Acts Dispensational Teachers Study Library",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
