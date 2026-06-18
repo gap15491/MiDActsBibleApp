@@ -107,6 +107,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .statusbar{background:#fff;border-top:1px solid #e0e0e0;padding:7px 18px;font-size:11px;color:#888;display:flex;align-items:center;gap:6px;}
 .spin{animation:spin 1s linear infinite;display:inline-block;}
 @keyframes spin{to{transform:rotate(360deg);}}
+/* diagnostic banner */
+.diag{padding:10px 18px;font-size:12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #e0e0e0;}
+.diag.ok{background:#f0f7f3;color:#1a6b3a;}
+.diag.warn{background:#fff8e7;color:#7a5500;}
+.diag.err{background:#fff0f0;color:#b00020;}
+/* error card */
+.errcard{background:#fff0f0;border:1px solid #f5c6c6;border-radius:10px;padding:16px;margin-bottom:12px;color:#b00020;font-size:13px;line-height:1.7;}
 </style>
 </head>
 <body>
@@ -127,6 +134,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="stat"><strong id="total-teachers">0</strong>active</div>
   </div>
 </div>
+
+<!-- Diagnostic banner — shown on load -->
+<div id="diag-banner" class="diag warn" style="display:none;">
+  <i class="ti ti-loader spin"></i><span id="diag-text">Checking configuration...</span>
+</div>
+
 <div class="layout">
   <div class="sidebar">
     <div class="sb-head">Teachers</div>
@@ -152,10 +165,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <input type="file" id="file-input" multiple accept=".txt,.md" style="display:none;" onchange="handleFiles(this.files)"/>
   </div>
   <div class="main">
+    <!-- SEARCH PANEL -->
     <div class="panel active" id="panel-search">
       <div class="toolbar">
         <div class="search-row">
-          <input class="search-input" id="q-search" placeholder="Ask any theological question across your uploaded transcripts..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doSearch();}"/>
+          <input class="search-input" id="q-search" placeholder="Ask any theological question across your uploaded transcripts..."
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doSearch();}"/>
           <button class="btn green" onclick="doSearch()"><i class="ti ti-search"></i>Search</button>
           <button class="btn" onclick="doSummarize()"><i class="ti ti-list"></i>Summarize</button>
         </div>
@@ -170,10 +185,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="empty" id="empty-search">
           <i class="ti ti-bible"></i>
           <div class="empty-t">Ready to search</div>
-          <div class="empty-s">Select a teacher, upload their .txt transcript files, then ask any question.</div>
+          <div class="empty-s">Upload .txt transcript files for any teacher, then ask any question.</div>
         </div>
       </div>
     </div>
+
+    <!-- COMPARE PANEL -->
     <div class="panel" id="panel-compare">
       <div class="cmp-bar">
         <span style="font-size:11px;color:#888;">Select teachers to compare:</span>
@@ -181,7 +198,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <div class="toolbar">
         <div class="search-row">
-          <input class="search-input" id="q-compare" placeholder="Ask a question to see each teacher's answer side by side..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doCompare();}"/>
+          <input class="search-input" id="q-compare" placeholder="Ask a question to see each teacher's answer side by side..."
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doCompare();}"/>
           <button class="btn green" onclick="doCompare()"><i class="ti ti-columns"></i>Compare</button>
         </div>
         <div class="topics">
@@ -202,6 +220,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
       </div>
     </div>
+
+    <!-- HISTORY PANEL -->
     <div class="panel" id="panel-history">
       <div class="toolbar" style="display:flex;align-items:center;justify-content:space-between;">
         <span style="font-size:14px;font-weight:500;">Search history</span>
@@ -215,6 +235,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
       </div>
     </div>
+
+    <!-- NOTES PANEL -->
     <div class="panel" id="panel-notes">
       <div class="notes-tb">
         <button class="btn green" onclick="newNote()"><i class="ti ti-plus"></i>New note</button>
@@ -237,10 +259,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
       </div>
     </div>
-    <div class="statusbar" id="statusbar"><i class="ti ti-info-circle"></i><span id="status-text">Ready — select a teacher and upload transcripts to begin</span></div>
+
+    <div class="statusbar" id="statusbar"><i class="ti ti-info-circle"></i><span id="status-text">Loading...</span></div>
   </div>
 </div>
 </div>
+
 <script>
 const COLORS=[
   {bg:'#9FE1CB',fg:'#085041'},{bg:'#B5D4F4',fg:'#0C447C'},{bg:'#FAC775',fg:'#633806'},
@@ -249,384 +273,523 @@ const COLORS=[
 ];
 
 const TEACHERS=[
-  {id:'reid',   name:'David Reid',    ministry:'Columbus Bible Church',         initials:'DR', bg:'#9FE1CB',fg:'#085041', files:{},on:false},
-  {id:'feldick',name:'Les Feldick',   ministry:'Through the Bible',             initials:'LF', bg:'#B5D4F4',fg:'#0C447C', files:{},on:false},
-  {id:'atwood', name:'Steve Atwood',  ministry:'Grace Bible Church Chattanooga',initials:'SA', bg:'#FAC775',fg:'#633806', files:{},on:false},
-  {id:'gabert', name:'Mark Gabert',   ministry:'Gracepoint Bible Church',       initials:'MG', bg:'#F4C0D1',fg:'#72243E', files:{},on:false},
-  {id:'johnson',name:'Justin Johnson',ministry:'Grace Ambassadors',             initials:'JJ', bg:'#C0DD97',fg:'#27500A', files:{},on:false},
-  {id:'ross',   name:'Bryan Ross',    ministry:'Grace Life Bible Church',       initials:'BR', bg:'#AFA9EC',fg:'#3C3489', files:{},on:false}
+  {id:'reid',   name:'David Reid',    ministry:'Columbus Bible Church',          initials:'DR',bg:'#9FE1CB',fg:'#085041',files:{},on:false},
+  {id:'feldick',name:'Les Feldick',   ministry:'Through the Bible',              initials:'LF',bg:'#B5D4F4',fg:'#0C447C',files:{},on:false},
+  {id:'atwood', name:'Steve Atwood',  ministry:'Grace Bible Church Chattanooga', initials:'SA',bg:'#FAC775',fg:'#633806',files:{},on:false},
+  {id:'gabert', name:'Mark Gabert',   ministry:'Gracepoint Bible Church',        initials:'MG',bg:'#F4C0D1',fg:'#72243E',files:{},on:false},
+  {id:'johnson',name:'Justin Johnson',ministry:'Grace Ambassadors',              initials:'JJ',bg:'#C0DD97',fg:'#27500A',files:{},on:false},
+  {id:'ross',   name:'Bryan Ross',    ministry:'Grace Life Bible Church',        initials:'BR',bg:'#AFA9EC',fg:'#3C3489',files:{},on:false}
 ];
 
 const TOPICS=['Soul sleep','Bride of Christ','Kenosis','Rapture','The mystery','Water baptism','Israel vs Body of Christ','Acts 9','Rightly dividing','Millennium','Fullness of times','Kingdom of priests'];
 
 let activeId='reid', scope='all', searchHistory=[], notes=[], activeNoteId=null, saveTimer=null;
 
-async function api(method,path,body){
-  const opts={method,headers:{'Content-Type':'application/json'}};
-  if(body) opts.body=JSON.stringify(body);
-  const r=await fetch(path,opts);
-  return r.json();
+// ── API helpers ──────────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Server error ' + r.status);
+  return data;
 }
 
-async function callClaude(prompt){
-  const data=await api('POST','/api/claude',{model:'claude-sonnet-4-6',
-max_tokens:1000,messages:[{role:'user',content:prompt}]});  
-  if(data.error) throw new Error(data.error);
-  return data.content?.[0]?.text||'No response.';
+async function callClaude(prompt) {
+  const data = await api('POST', '/api/claude', {
+    model: 'claude-sonnet-4-6',
+    max_tokens: 1500,
+    messages: [{ role: 'user', content: prompt }]
+  });
+  if (data.error) throw new Error(data.error);
+  return data.content?.[0]?.text || 'No response.';
 }
 
-async function loadData(){
-  try{
-    const [h,n]=await Promise.all([api('GET','/api/history'),api('GET','/api/notes')]);
-    searchHistory=Array.isArray(h)?h:[];
-    notes=Array.isArray(n)?n:[];
-    renderHistory();renderNotesList();updateBadges();
-  }catch(e){console.error('Load error:',e);}
+// ── Health check on startup ──────────────────────────────────────
+async function checkHealth() {
+  const banner = document.getElementById('diag-banner');
+  const diagText = document.getElementById('diag-text');
+  banner.style.display = 'flex';
+  try {
+    const h = await api('GET', '/api/health');
+    if (!h.hasApiKey) {
+      banner.className = 'diag err';
+      diagText.innerHTML = '<strong>⚠ ANTHROPIC_API_KEY not set.</strong> Go to Railway → your service → Variables tab → add ANTHROPIC_API_KEY. Search will not work until this is set.';
+      banner.querySelector('i').className = 'ti ti-alert-circle';
+    } else if (!h.dbOk) {
+      banner.className = 'diag warn';
+      diagText.innerHTML = '<strong>⚠ Database not connected.</strong> Transcripts and notes will not persist across reloads. Add a Postgres database in Railway.';
+      banner.querySelector('i').className = 'ti ti-database-off';
+    } else {
+      banner.className = 'diag ok';
+      diagText.innerHTML = '✓ API key active · Database connected — transcripts and notes persist automatically.';
+      banner.querySelector('i').className = 'ti ti-circle-check';
+      // fade out after 4s when all good
+      setTimeout(() => { banner.style.display = 'none'; }, 4000);
+    }
+  } catch(e) {
+    banner.className = 'diag err';
+    diagText.innerHTML = 'Could not reach server: ' + e.message;
+    banner.querySelector('i').className = 'ti ti-alert-circle';
+  }
 }
 
-function setStatus(msg,loading){
-  document.getElementById('statusbar').innerHTML=loading
-    ?'<i class="ti ti-loader spin"></i><span>'+msg+'</span>'
-    :'<i class="ti ti-info-circle"></i><span>'+msg+'</span>';
+// ── Load all persistent data ─────────────────────────────────────
+async function loadData() {
+  try {
+    const [h, n, txs] = await Promise.all([
+      api('GET', '/api/history'),
+      api('GET', '/api/notes'),
+      api('GET', '/api/transcripts')
+    ]);
+    searchHistory = Array.isArray(h) ? h : [];
+    notes = Array.isArray(n) ? n : [];
+
+    // Restore transcripts into TEACHERS
+    if (Array.isArray(txs)) {
+      txs.forEach(function(tx) {
+        const t = TEACHERS.find(function(x) { return x.id === tx.teacher_id; });
+        if (t) t.files[tx.filename] = tx.content;
+      });
+    }
+
+    renderTeacherList();
+    renderHistory();
+    renderNotesList();
+    updateBadges();
+    setStatus('Ready — ' + txs.length + ' transcript' + (txs.length !== 1 ? 's' : '') + ' loaded from database');
+  } catch(e) {
+    setStatus('Load error: ' + e.message);
+  }
 }
 
-function renderTeacherList(){
-  const list=document.getElementById('teacher-list');
-  list.innerHTML='';
-  let totalFiles=0,totalActive=0;
-  TEACHERS.forEach(function(t){
-    const cnt=Object.keys(t.files).length;
-    totalFiles+=cnt;
-    if(cnt>0) totalActive++;
-    const el=document.createElement('div');
-    el.className='t-item'+(t.id===activeId?' active':'');
-    el.onclick=function(){selectTeacher(t.id);};
+function setStatus(msg, loading) {
+  document.getElementById('statusbar').innerHTML = loading
+    ? '<i class="ti ti-loader spin"></i><span>' + msg + '</span>'
+    : '<i class="ti ti-info-circle"></i><span>' + msg + '</span>';
+}
 
-    const av=document.createElement('div');
-    av.className='t-avatar';
-    av.style.background=t.bg;
-    av.style.color=t.fg;
-    av.textContent=t.initials;
+function showError(container, title, detail) {
+  const div = document.createElement('div');
+  div.className = 'errcard';
+  div.innerHTML = '<strong>' + escHtml(title) + '</strong><br>' + escHtml(detail);
+  container.innerHTML = '';
+  container.appendChild(div);
+}
 
-    const info=document.createElement('div');
-    info.style.flex='1';
-
-    const nameDiv=document.createElement('div');
-    nameDiv.className='t-name';
-    nameDiv.textContent=t.name;
-
-    const minDiv=document.createElement('div');
-    minDiv.className='t-ministry';
-    minDiv.textContent=t.ministry;
-
-    const cntDiv=document.createElement('div');
-    cntDiv.className='t-count';
-    cntDiv.textContent=cnt>0?cnt+' transcript'+(cnt!==1?'s':''):'No transcripts';
-
-    info.appendChild(nameDiv);
-    info.appendChild(minDiv);
-    info.appendChild(cntDiv);
-
-    const actions=document.createElement('div');
-    actions.className='t-actions';
-    actions.innerHTML='<button class="icon-btn" title="Upload" onclick="event.stopPropagation();uploadFor(\''+t.id+'\')"><i class="ti ti-upload"></i></button><button class="icon-btn" title="Clear" onclick="event.stopPropagation();clearTeacher(\''+t.id+'\')"><i class="ti ti-trash"></i></button>';
-
+// ── Teacher list ─────────────────────────────────────────────────
+function renderTeacherList() {
+  const list = document.getElementById('teacher-list');
+  list.innerHTML = '';
+  let totalFiles = 0, totalActive = 0;
+  TEACHERS.forEach(function(t) {
+    const cnt = Object.keys(t.files).length;
+    totalFiles += cnt;
+    if (cnt > 0) totalActive++;
+    const el = document.createElement('div');
+    el.className = 't-item' + (t.id === activeId ? ' active' : '');
+    el.onclick = function() { selectTeacher(t.id); };
+    const av = document.createElement('div');
+    av.className = 't-avatar';
+    av.style.background = t.bg;
+    av.style.color = t.fg;
+    av.textContent = t.initials;
+    const info = document.createElement('div');
+    info.style.flex = '1';
+    info.innerHTML =
+      '<div class="t-name">' + escHtml(t.name) + '</div>' +
+      '<div class="t-ministry">' + escHtml(t.ministry) + '</div>' +
+      '<div class="t-count">' + (cnt > 0 ? cnt + ' transcript' + (cnt !== 1 ? 's' : '') : 'No transcripts') + '</div>';
+    const actions = document.createElement('div');
+    actions.className = 't-actions';
+    actions.innerHTML =
+      '<button class="icon-btn" title="Upload" onclick="event.stopPropagation();uploadFor(\'' + t.id + '\')"><i class="ti ti-upload"></i></button>' +
+      '<button class="icon-btn" title="Clear all transcripts" onclick="event.stopPropagation();clearTeacher(\'' + t.id + '\')"><i class="ti ti-trash"></i></button>';
     el.appendChild(av);
     el.appendChild(info);
     el.appendChild(actions);
     list.appendChild(el);
   });
-  document.getElementById('total-files').textContent=totalFiles;
-  document.getElementById('total-teachers').textContent=totalActive;
+  document.getElementById('total-files').textContent = totalFiles;
+  document.getElementById('total-teachers').textContent = totalActive;
   renderCompareChips();
 }
 
-function selectTeacher(id){
-  activeId=id;
+function selectTeacher(id) {
+  activeId = id;
   renderTeacherList();
-  const t=TEACHERS.find(function(x){return x.id===id;});
-  const cnt=Object.keys(t.files).length;
-  setStatus(t.name+' selected — '+cnt+' transcript'+(cnt!==1?'s':'')+' loaded');
+  const t = TEACHERS.find(function(x) { return x.id === id; });
+  const cnt = Object.keys(t.files).length;
+  setStatus(t.name + ' selected — ' + cnt + ' transcript' + (cnt !== 1 ? 's' : '') + ' loaded');
 }
 
-function uploadFor(id){activeId=id;document.getElementById('file-input').click();}
+function uploadFor(id) { activeId = id; document.getElementById('file-input').click(); }
 
-function handleFiles(fileList){
-  const t=TEACHERS.find(function(x){return x.id===activeId;});
-  let done=0;const total=fileList.length;
-  Array.from(fileList).forEach(function(f){
-    const r=new FileReader();
-    r.onload=function(e){
-      t.files[f.name]=e.target.result;
-      done++;
-      if(done===total){renderTeacherList();setStatus(t.name+' — '+Object.keys(t.files).length+' transcripts loaded');document.getElementById('empty-search').style.display='none';}
-    };
-    r.readAsText(f);
-  });
-  document.getElementById('file-input').value='';
+async function handleFiles(fileList) {
+  const t = TEACHERS.find(function(x) { return x.id === activeId; });
+  const files = Array.from(fileList);
+  let done = 0;
+  setStatus('Uploading ' + files.length + ' file' + (files.length !== 1 ? 's' : '') + '...', true);
+  for (const f of files) {
+    await new Promise(function(resolve) {
+      const r = new FileReader();
+      r.onload = async function(e) {
+        const content = e.target.result;
+        t.files[f.name] = content;
+        // Persist to database
+        try {
+          await api('POST', '/api/transcripts', { teacherId: t.id, filename: f.name, content });
+        } catch(err) {
+          console.warn('Could not save transcript to DB:', err.message);
+        }
+        done++;
+        resolve();
+      };
+      r.readAsText(f);
+    });
+  }
+  document.getElementById('file-input').value = '';
+  renderTeacherList();
+  setStatus(t.name + ' — ' + Object.keys(t.files).length + ' transcripts loaded and saved');
 }
 
-function clearTeacher(id){TEACHERS.find(function(x){return x.id===id;}).files={};renderTeacherList();setStatus('Transcripts cleared');}
-
-function showPanel(p){
-  document.querySelectorAll('.panel').forEach(function(x){x.classList.remove('active');});
-  document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
-  document.getElementById('panel-'+p).classList.add('active');
-  document.getElementById('tab-'+p).classList.add('active');
+async function clearTeacher(id) {
+  const t = TEACHERS.find(function(x) { return x.id === id; });
+  t.files = {};
+  try { await api('DELETE', '/api/transcripts/' + id); } catch(e) {}
+  renderTeacherList();
+  setStatus(t.name + ' transcripts cleared');
 }
 
-function setScope(s){
-  scope=s;
-  document.getElementById('sc-all').className='pill'+(s==='all'?' on':'');
-  document.getElementById('sc-cur').className='pill'+(s==='current'?' on':'');
+// ── Panels ───────────────────────────────────────────────────────
+function showPanel(p) {
+  document.querySelectorAll('.panel').forEach(function(x) { x.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(x) { x.classList.remove('active'); });
+  document.getElementById('panel-' + p).classList.add('active');
+  document.getElementById('tab-' + p).classList.add('active');
 }
 
-function buildQuickTopics(){
-  const el=document.getElementById('quick-topics');
-  TOPICS.forEach(function(topic){
-    const span=document.createElement('span');
-    span.className='pill';
-    span.textContent=topic;
-    span.onclick=function(){quickSearch(topic);};
+function setScope(s) {
+  scope = s;
+  document.getElementById('sc-all').className = 'pill' + (s === 'all' ? ' on' : '');
+  document.getElementById('sc-cur').className = 'pill' + (s === 'current' ? ' on' : '');
+}
+
+function buildQuickTopics() {
+  const el = document.getElementById('quick-topics');
+  TOPICS.forEach(function(topic) {
+    const span = document.createElement('span');
+    span.className = 'pill';
+    span.textContent = topic;
+    span.onclick = function() { quickSearch(topic); };
     el.appendChild(span);
   });
 }
 
-function quickSearch(topic){
-  const t=TEACHERS.find(function(x){return x.id===activeId;});
-  document.getElementById('q-search').value=(scope==='all'?'What do these teachers teach about ':'What does '+t.name+' teach about ')+topic+'?';
+function quickSearch(topic) {
+  const t = TEACHERS.find(function(x) { return x.id === activeId; });
+  document.getElementById('q-search').value = (scope === 'all'
+    ? 'What do these teachers teach about '
+    : 'What does ' + t.name + ' teach about ') + topic + '?';
   doSearch();
 }
 
-function setCompareQ(q){document.getElementById('q-compare').value=q;}
+function setCompareQ(q) { document.getElementById('q-compare').value = q; }
 
-function getContext(scopeOverride){
-  const s=scopeOverride||scope;
-  const teachers=s==='all'?TEACHERS:TEACHERS.filter(function(x){return x.id===activeId;});
-  return teachers.filter(function(t){return Object.keys(t.files).length>0;}).map(function(t){
-    const combined=Object.entries(t.files).map(function(e){return '--- '+e[0]+' ---\n'+e[1];}).join('\n\n');
-    return {teacher:t,content:combined.length>22000?combined.substring(0,22000)+'\n[truncated]':combined};
-  });
+function getContext(scopeOverride) {
+  const s = scopeOverride || scope;
+  const teachers = s === 'all' ? TEACHERS : TEACHERS.filter(function(x) { return x.id === activeId; });
+  return teachers
+    .filter(function(t) { return Object.keys(t.files).length > 0; })
+    .map(function(t) {
+      const combined = Object.entries(t.files)
+        .map(function(e) { return '--- ' + e[0] + ' ---\n' + e[1]; })
+        .join('\n\n');
+      return {
+        teacher: t,
+        content: combined.length > 22000 ? combined.substring(0, 22000) + '\n[truncated]' : combined
+      };
+    });
 }
 
-async function doSearch(){
-  const q=document.getElementById('q-search').value.trim();
-  if(!q) return;
-  const ctx=getContext();
-  if(ctx.length===0){setStatus('No transcripts loaded — upload files first');return;}
-  setStatus('Searching transcripts...',true);
-  document.getElementById('empty-search').style.display='none';
-  const rl=document.getElementById('results-search');
-  rl.innerHTML='';
-  const contextText=ctx.map(function(x){return '=== '+x.teacher.name+' ('+x.teacher.ministry+') ===\n'+x.content;}).join('\n\n');
-  const prompt='You are analyzing Bible teaching transcripts from Mid-Acts Dispensational teachers using the King James Bible.\n\nTeachers and transcripts:\n'+contextText+'\n\nQuestion: '+q+'\n\nAnswer based ONLY on these transcripts. Compare views across teachers where relevant. Quote directly using teacher names. Use KJV references as they appear.';
-  try{
-    const ans=await callClaude(prompt);
-    const card=document.createElement('div');
-    card.className='rcard';
-    const badges=ctx.map(function(x){return '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;background:'+x.teacher.bg+';color:'+x.teacher.fg+';margin-right:4px;">'+x.teacher.name+'</span>';}).join('');
-    card.innerHTML='<div class="rcard-head"><i class="ti ti-search" style="font-size:14px;color:#888;"></i><span class="rcard-q">'+escHtml(q)+'</span><button class="btn" style="font-size:11px;" onclick="saveSearchAsNote(\''+escAttr(q)+'\',\''+escAttr(ans.substring(0,300))+'\')"><i class="ti ti-notes"></i>Save to notes</button></div><div style="margin-bottom:10px;">'+badges+'</div><div class="rcard-text">'+escHtml(ans)+'</div>';
+// ── Search ───────────────────────────────────────────────────────
+async function doSearch() {
+  const q = document.getElementById('q-search').value.trim();
+  if (!q) { setStatus('Enter a question first'); return; }
+  const ctx = getContext();
+  const rl = document.getElementById('results-search');
+
+  if (ctx.length === 0) {
+    setStatus('No transcripts loaded — hover a teacher name and click the upload icon');
+    showError(rl, 'No transcripts loaded',
+      'Upload .txt transcript files first. Hover over a teacher name in the sidebar and click the upload icon.');
+    return;
+  }
+
+  setStatus('Searching ' + ctx.length + ' teacher' + (ctx.length !== 1 ? 's' : '') + '...', true);
+  document.getElementById('empty-search').style.display = 'none';
+  rl.innerHTML = '';
+
+  const contextText = ctx.map(function(x) {
+    return '=== ' + x.teacher.name + ' (' + x.teacher.ministry + ') ===\n' + x.content;
+  }).join('\n\n');
+
+  const prompt = 'You are analyzing Bible teaching transcripts from Mid-Acts Dispensational teachers using the King James Bible.\n\nTeachers and transcripts:\n' + contextText + '\n\nQuestion: ' + q + '\n\nAnswer based ONLY on these transcripts. Compare views across teachers where relevant. Quote directly using teacher names. Use KJV references as they appear.';
+
+  try {
+    const ans = await callClaude(prompt);
+    const card = document.createElement('div');
+    card.className = 'rcard';
+    const badges = ctx.map(function(x) {
+      return '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;background:' + x.teacher.bg + ';color:' + x.teacher.fg + ';margin-right:4px;">' + escHtml(x.teacher.name) + '</span>';
+    }).join('');
+    card.innerHTML =
+      '<div class="rcard-head"><i class="ti ti-search" style="font-size:14px;color:#888;"></i>' +
+      '<span class="rcard-q">' + escHtml(q) + '</span>' +
+      '<button class="btn" style="font-size:11px;" onclick="saveSearchAsNote(\'' + escAttr(q) + '\',\'' + escAttr(ans.substring(0,300)) + '\')"><i class="ti ti-notes"></i>Save to notes</button></div>' +
+      '<div style="margin-bottom:10px;">' + badges + '</div>' +
+      '<div class="rcard-text">' + escHtml(ans) + '</div>';
     rl.appendChild(card);
-    await addHistory(q,scope==='all'?'All teachers':'Current teacher',ctx.map(function(x){return x.teacher.name;}).join(', '),'search');
-    setStatus('Search complete — '+ctx.length+' teacher'+(ctx.length!==1?'s':'')+' searched');
-  }catch(e){setStatus('Error: '+e.message);}
+    await addHistory(q, scope === 'all' ? 'All teachers' : 'Current teacher', ctx.map(function(x) { return x.teacher.name; }).join(', '), 'search');
+    setStatus('Done — ' + ctx.length + ' teacher' + (ctx.length !== 1 ? 's' : '') + ' searched');
+  } catch(e) {
+    showError(rl, 'Search failed', e.message);
+    setStatus('Error: ' + e.message);
+  }
 }
 
-async function doSummarize(){
-  const t=TEACHERS.find(function(x){return x.id===activeId;});
-  const files=Object.entries(t.files);
-  if(files.length===0){setStatus('No transcripts for '+t.name);return;}
-  document.getElementById('q-search').value='Summary';
-  setStatus('Summarizing...',true);
-  document.getElementById('empty-search').style.display='none';
-  const rl=document.getElementById('results-search');rl.innerHTML='';
-  const combined=files.map(function(e){return '--- '+e[0]+' ---\n'+e[1];}).join('\n\n');
-  const trunc=combined.length>40000?combined.substring(0,40000)+'\n[truncated]':combined;
-  const prompt='You are analyzing transcripts from '+t.name+', a Mid-Acts Dispensational teacher using the King James Bible.\n\n'+trunc+'\n\nProvide a comprehensive summary organized by doctrinal topic. Include KJV Scripture references as used.';
-  try{
-    const ans=await callClaude(prompt);
-    const card=document.createElement('div');
-    card.className='rcard';
-    card.innerHTML='<div class="rcard-head"><div class="t-avatar" style="width:24px;height:24px;font-size:10px;background:'+t.bg+';color:'+t.fg+';">'+t.initials+'</div><span class="rcard-q">'+t.name+' — summary</span></div><div class="rcard-text">'+escHtml(ans)+'</div>';
+// ── Summarize ────────────────────────────────────────────────────
+async function doSummarize() {
+  const t = TEACHERS.find(function(x) { return x.id === activeId; });
+  const files = Object.entries(t.files);
+  const rl = document.getElementById('results-search');
+  if (files.length === 0) {
+    setStatus('No transcripts for ' + t.name);
+    showError(rl, 'No transcripts for ' + t.name, 'Upload transcript files for this teacher first.');
+    return;
+  }
+  document.getElementById('q-search').value = 'Summary';
+  setStatus('Summarizing ' + t.name + '...', true);
+  document.getElementById('empty-search').style.display = 'none';
+  rl.innerHTML = '';
+  const combined = files.map(function(e) { return '--- ' + e[0] + ' ---\n' + e[1]; }).join('\n\n');
+  const trunc = combined.length > 40000 ? combined.substring(0, 40000) + '\n[truncated]' : combined;
+  const prompt = 'You are analyzing transcripts from ' + t.name + ', a Mid-Acts Dispensational teacher using the King James Bible.\n\n' + trunc + '\n\nProvide a comprehensive summary organized by doctrinal topic. Include KJV Scripture references as used.';
+  try {
+    const ans = await callClaude(prompt);
+    const card = document.createElement('div');
+    card.className = 'rcard';
+    card.innerHTML =
+      '<div class="rcard-head"><div class="t-avatar" style="width:24px;height:24px;font-size:10px;background:' + t.bg + ';color:' + t.fg + ';">' + t.initials + '</div>' +
+      '<span class="rcard-q">' + escHtml(t.name) + ' — summary</span></div>' +
+      '<div class="rcard-text">' + escHtml(ans) + '</div>';
     rl.appendChild(card);
-    await addHistory('Summary: '+t.name,t.name,t.name,'search');
-    setStatus('Summary complete for '+t.name);
-  }catch(e){setStatus('Error: '+e.message);}
+    await addHistory('Summary: ' + t.name, t.name, t.name, 'search');
+    setStatus('Summary complete for ' + t.name);
+  } catch(e) {
+    showError(rl, 'Summary failed', e.message);
+    setStatus('Error: ' + e.message);
+  }
 }
 
-function renderCompareChips(){
-  const chips=document.getElementById('compare-chips');
-  chips.innerHTML='';
-  TEACHERS.filter(function(t){return Object.keys(t.files).length>0;}).forEach(function(t){
-    const c=document.createElement('span');
-    c.className='chip'+(t.on?' on':'');
-    if(t.on) c.style.borderColor=t.fg;
-    c.innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:'+t.bg+';border:1px solid '+t.fg+';display:inline-block;"></span>'+t.name;
-    c.onclick=function(){t.on=!t.on;renderCompareChips();updateBadges();};
+// ── Compare ──────────────────────────────────────────────────────
+function renderCompareChips() {
+  const chips = document.getElementById('compare-chips');
+  chips.innerHTML = '';
+  TEACHERS.filter(function(t) { return Object.keys(t.files).length > 0; }).forEach(function(t) {
+    const c = document.createElement('span');
+    c.className = 'chip' + (t.on ? ' on' : '');
+    if (t.on) c.style.borderColor = t.fg;
+    c.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:' + t.bg + ';border:1px solid ' + t.fg + ';display:inline-block;"></span>' + escHtml(t.name);
+    c.onclick = function() { t.on = !t.on; renderCompareChips(); updateBadges(); };
     chips.appendChild(c);
   });
-  document.getElementById('b-cmp').textContent=TEACHERS.filter(function(t){return t.on;}).length;
+  document.getElementById('b-cmp').textContent = TEACHERS.filter(function(t) { return t.on; }).length;
 }
 
-async function doCompare(){
-  const q=document.getElementById('q-compare').value.trim();
-  const selected=TEACHERS.filter(function(t){return t.on&&Object.keys(t.files).length>0;});
-  if(selected.length<2){setStatus('Select at least 2 teachers with transcripts');return;}
-  if(!q) return;
-  setStatus('Comparing '+selected.length+' teachers...',true);
-  document.getElementById('empty-compare').style.display='none';
-  const rl=document.getElementById('results-compare');rl.innerHTML='';
-  const cols=Math.min(selected.length,3);
-  const grid=document.createElement('div');
-  grid.className='cmp-grid';
-  grid.style.gridTemplateColumns='repeat('+cols+',minmax(0,1fr))';
-  selected.forEach(function(t){
-    const col=document.createElement('div');col.className='cmp-col';
-    col.innerHTML='<div class="cmp-col-head"><div class="t-avatar" style="width:24px;height:24px;font-size:10px;background:'+t.bg+';color:'+t.fg+';">'+t.initials+'</div>'+t.name+'</div><div class="cmp-col-text" id="cmp-'+t.id+'"><i class="ti ti-loader spin" style="font-size:16px;color:#ccc;"></i></div>';
+async function doCompare() {
+  const q = document.getElementById('q-compare').value.trim();
+  const selected = TEACHERS.filter(function(t) { return t.on && Object.keys(t.files).length > 0; });
+  const rl = document.getElementById('results-compare');
+  if (selected.length < 2) { setStatus('Select at least 2 teachers with transcripts'); return; }
+  if (!q) { setStatus('Enter a question first'); return; }
+  setStatus('Comparing ' + selected.length + ' teachers...', true);
+  document.getElementById('empty-compare').style.display = 'none';
+  rl.innerHTML = '';
+  const cols = Math.min(selected.length, 3);
+  const grid = document.createElement('div');
+  grid.className = 'cmp-grid';
+  grid.style.gridTemplateColumns = 'repeat(' + cols + ',minmax(0,1fr))';
+  selected.forEach(function(t) {
+    const col = document.createElement('div');
+    col.className = 'cmp-col';
+    col.innerHTML =
+      '<div class="cmp-col-head"><div class="t-avatar" style="width:24px;height:24px;font-size:10px;background:' + t.bg + ';color:' + t.fg + ';">' + t.initials + '</div>' + escHtml(t.name) + '</div>' +
+      '<div class="cmp-col-text" id="cmp-' + t.id + '"><i class="ti ti-loader spin" style="font-size:16px;color:#ccc;"></i></div>';
     grid.appendChild(col);
   });
   rl.appendChild(grid);
-  await Promise.all(selected.map(async function(t){
-    const combined=Object.entries(t.files).map(function(e){return '--- '+e[0]+' ---\n'+e[1];}).join('\n\n');
-    const trunc=combined.length>22000?combined.substring(0,22000)+'\n[truncated]':combined;
-    const ans=await callClaude('You are analyzing transcripts from '+t.name+', a Mid-Acts Dispensational teacher (KJV only).\n\n'+trunc+'\n\nQuestion: '+q+'\n\nAnswer concisely (3-5 paragraphs) based ONLY on these transcripts.');
-    document.getElementById('cmp-'+t.id).textContent=ans;
+  await Promise.all(selected.map(async function(t) {
+    const combined = Object.entries(t.files).map(function(e) { return '--- ' + e[0] + ' ---\n' + e[1]; }).join('\n\n');
+    const trunc = combined.length > 22000 ? combined.substring(0, 22000) + '\n[truncated]' : combined;
+    try {
+      const ans = await callClaude('You are analyzing transcripts from ' + t.name + ', a Mid-Acts Dispensational teacher (KJV only).\n\n' + trunc + '\n\nQuestion: ' + q + '\n\nAnswer concisely (3-5 paragraphs) based ONLY on these transcripts.');
+      document.getElementById('cmp-' + t.id).textContent = ans;
+    } catch(e) {
+      document.getElementById('cmp-' + t.id).innerHTML = '<span style="color:#b00020;">Error: ' + escHtml(e.message) + '</span>';
+    }
   }));
-  await addHistory(q,'Compare',selected.map(function(t){return t.name;}).join(', '),'compare');
+  await addHistory(q, 'Compare', selected.map(function(t) { return t.name; }).join(', '), 'compare');
   setStatus('Compare complete');
 }
 
-async function addHistory(query,scope,teachers,mode){
-  const entry={id:Date.now(),query:query,scope:scope,teachers:teachers,mode:mode,ts:new Date().toISOString()};
-  await api('POST','/api/history',entry);
+// ── History ───────────────────────────────────────────────────────
+async function addHistory(query, scopeLabel, teachers, mode) {
+  const entry = { id: Date.now(), query, scope: scopeLabel, teachers, mode, ts: new Date().toISOString() };
+  try { await api('POST', '/api/history', entry); } catch(e) {}
   searchHistory.unshift(entry);
-  renderHistory();updateBadges();
+  renderHistory();
+  updateBadges();
 }
 
-function renderHistory(){
-  const list=document.getElementById('history-list');
-  const empty=document.getElementById('empty-history');
-  if(searchHistory.length===0){empty.style.display='flex';list.querySelectorAll('.hitem').forEach(function(e){e.remove();});return;}
-  empty.style.display='none';list.innerHTML='';
-  searchHistory.forEach(function(h){
-    const d=new Date(h.ts);
-    const ds=d.toLocaleDateString()+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
-    const el=document.createElement('div');el.className='hitem';
-    el.innerHTML='<i class="ti ti-'+(h.mode==='compare'?'columns':'search')+'" style="font-size:15px;color:#888;margin-top:2px;"></i><div style="flex:1;min-width:0;"><div class="hitem-q">'+escHtml(h.query)+'</div><div class="hitem-meta">'+ds+' &middot; '+escHtml(h.teachers)+'</div></div><div class="hitem-right"><span class="scope-tag">'+escHtml(h.scope)+'</span><button class="btn" onclick="rerunSearch('+h.id+')" title="Re-run"><i class="ti ti-refresh"></i></button><button class="btn" onclick="removeHistory('+h.id+')" title="Delete"><i class="ti ti-trash"></i></button></div>';
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const empty = document.getElementById('empty-history');
+  if (searchHistory.length === 0) { empty.style.display = 'flex'; list.innerHTML = ''; return; }
+  empty.style.display = 'none';
+  list.innerHTML = '';
+  searchHistory.forEach(function(h) {
+    const d = new Date(h.ts);
+    const ds = d.toLocaleDateString() + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    const el = document.createElement('div');
+    el.className = 'hitem';
+    el.innerHTML =
+      '<i class="ti ti-' + (h.mode === 'compare' ? 'columns' : 'search') + '" style="font-size:15px;color:#888;margin-top:2px;"></i>' +
+      '<div style="flex:1;min-width:0;"><div class="hitem-q">' + escHtml(h.query) + '</div><div class="hitem-meta">' + ds + ' &middot; ' + escHtml(h.teachers) + '</div></div>' +
+      '<div class="hitem-right"><span class="scope-tag">' + escHtml(h.scope) + '</span>' +
+      '<button class="btn" onclick="rerunSearch(' + h.id + ')" title="Re-run"><i class="ti ti-refresh"></i></button>' +
+      '<button class="btn" onclick="removeHistory(' + h.id + ')" title="Delete"><i class="ti ti-trash"></i></button></div>';
     list.appendChild(el);
   });
 }
 
-function rerunSearch(id){
-  const h=searchHistory.find(function(x){return x.id==id;});
-  if(!h) return;
-  if(h.mode==='compare'){showPanel('compare');document.getElementById('q-compare').value=h.query;doCompare();}
-  else{showPanel('search');document.getElementById('q-search').value=h.query;doSearch();}
+function rerunSearch(id) {
+  const h = searchHistory.find(function(x) { return x.id == id; });
+  if (!h) return;
+  if (h.mode === 'compare') { showPanel('compare'); document.getElementById('q-compare').value = h.query; doCompare(); }
+  else { showPanel('search'); document.getElementById('q-search').value = h.query; doSearch(); }
 }
 
-async function removeHistory(id){
-  await api('DELETE','/api/history/'+id);
-  searchHistory=searchHistory.filter(function(x){return x.id!=id;});
-  renderHistory();updateBadges();
+async function removeHistory(id) {
+  try { await api('DELETE', '/api/history/' + id); } catch(e) {}
+  searchHistory = searchHistory.filter(function(x) { return x.id != id; });
+  renderHistory(); updateBadges();
 }
 
-async function clearHistory(){
-  await api('DELETE','/api/history');
-  searchHistory=[];renderHistory();updateBadges();
+async function clearHistory() {
+  try { await api('DELETE', '/api/history'); } catch(e) {}
+  searchHistory = []; renderHistory(); updateBadges();
 }
 
-function newNote(){
-  const note={id:Date.now(),title:'New note',body:'',tag:'',created:new Date().toISOString(),updated:new Date().toISOString()};
-  notes.unshift(note);activeNoteId=note.id;
-  api('POST','/api/notes',note);
-  renderNotesList();openNote(note.id);updateBadges();
+// ── Notes ────────────────────────────────────────────────────────
+function newNote() {
+  const note = { id: Date.now(), title: 'New note', body: '', tag: '', created: new Date().toISOString(), updated: new Date().toISOString() };
+  notes.unshift(note); activeNoteId = note.id;
+  api('POST', '/api/notes', note).catch(function(){});
+  renderNotesList(); openNote(note.id); updateBadges();
 }
 
-function openNote(id){
-  activeNoteId=id;
-  const note=notes.find(function(n){return n.id==id;});
-  if(!note) return;
-  document.getElementById('note-empty').style.display='none';
-  document.getElementById('note-body').style.display='block';
-  document.getElementById('note-title').value=note.title||'';
-  document.getElementById('note-tag').value=note.tag||'';
-  document.getElementById('note-body').value=note.body||'';
+function openNote(id) {
+  activeNoteId = id;
+  const note = notes.find(function(n) { return n.id == id; });
+  if (!note) return;
+  document.getElementById('note-empty').style.display = 'none';
+  document.getElementById('note-body').style.display = 'block';
+  document.getElementById('note-title').value = note.title || '';
+  document.getElementById('note-tag').value = note.tag || '';
+  document.getElementById('note-body').value = note.body || '';
   renderNotesList();
 }
 
-function saveNote(){
-  if(!activeNoteId) return;
-  if(saveTimer) clearTimeout(saveTimer);
-  saveTimer=setTimeout(async function(){
-    const note=notes.find(function(n){return n.id==activeNoteId;});
-    if(!note) return;
-    note.title=document.getElementById('note-title').value||'Untitled';
-    note.body=document.getElementById('note-body').value;
-    note.tag=document.getElementById('note-tag').value;
-    note.updated=new Date().toISOString();
-    await api('POST','/api/notes',note);
+function saveNote() {
+  if (!activeNoteId) return;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async function() {
+    const note = notes.find(function(n) { return n.id == activeNoteId; });
+    if (!note) return;
+    note.title = document.getElementById('note-title').value || 'Untitled';
+    note.body = document.getElementById('note-body').value;
+    note.tag = document.getElementById('note-tag').value;
+    note.updated = new Date().toISOString();
+    try { await api('POST', '/api/notes', note); } catch(e) {}
     renderNotesList();
-  },800);
+  }, 800);
 }
 
-async function deleteNote(){
-  if(!activeNoteId) return;
-  await api('DELETE','/api/notes/'+activeNoteId);
-  notes=notes.filter(function(n){return n.id!=activeNoteId;});
-  activeNoteId=null;
-  document.getElementById('note-empty').style.display='flex';
-  document.getElementById('note-body').style.display='none';
-  document.getElementById('note-title').value='';
-  renderNotesList();updateBadges();
+async function deleteNote() {
+  if (!activeNoteId) return;
+  try { await api('DELETE', '/api/notes/' + activeNoteId); } catch(e) {}
+  notes = notes.filter(function(n) { return n.id != activeNoteId; });
+  activeNoteId = null;
+  document.getElementById('note-empty').style.display = 'flex';
+  document.getElementById('note-body').style.display = 'none';
+  document.getElementById('note-title').value = '';
+  renderNotesList(); updateBadges();
 }
 
-async function saveSearchAsNote(title,preview){
-  const note={id:Date.now(),title:title.substring(0,60),body:preview,tag:'General',created:new Date().toISOString(),updated:new Date().toISOString()};
-  notes.unshift(note);activeNoteId=note.id;
-  await api('POST','/api/notes',note);
-  updateBadges();showPanel('notes');renderNotesList();openNote(note.id);setStatus('Saved to notes');
+async function saveSearchAsNote(title, preview) {
+  const note = { id: Date.now(), title: title.substring(0,60), body: preview, tag: 'General', created: new Date().toISOString(), updated: new Date().toISOString() };
+  notes.unshift(note); activeNoteId = note.id;
+  try { await api('POST', '/api/notes', note); } catch(e) {}
+  updateBadges(); showPanel('notes'); renderNotesList(); openNote(note.id); setStatus('Saved to notes');
 }
 
-function renderNotesList(){
-  const list=document.getElementById('notes-list');list.innerHTML='';
-  if(notes.length===0){list.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:#888;">No notes yet</div>';return;}
-  notes.forEach(function(n){
-    const el=document.createElement('div');el.className='nitem'+(n.id==activeNoteId?' active':'');el.onclick=function(){openNote(n.id);};
-    el.innerHTML='<div class="nitem-title">'+(n.title||'Untitled')+'</div><div class="nitem-meta">'+(n.tag?'<span style="color:#555;">'+n.tag+'</span> &middot; ':'')+new Date(n.created).toLocaleDateString()+'</div>';
+function renderNotesList() {
+  const list = document.getElementById('notes-list');
+  list.innerHTML = '';
+  if (notes.length === 0) { list.innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:#888;">No notes yet</div>'; return; }
+  notes.forEach(function(n) {
+    const el = document.createElement('div');
+    el.className = 'nitem' + (n.id == activeNoteId ? ' active' : '');
+    el.onclick = function() { openNote(n.id); };
+    el.innerHTML = '<div class="nitem-title">' + escHtml(n.title || 'Untitled') + '</div><div class="nitem-meta">' + (n.tag ? '<span style="color:#555;">' + escHtml(n.tag) + '</span> &middot; ' : '') + new Date(n.created).toLocaleDateString() + '</div>';
     list.appendChild(el);
   });
 }
 
-function toggleAddForm(){document.getElementById('add-form').classList.toggle('open');}
+// ── Add teacher ───────────────────────────────────────────────────
+function toggleAddForm() { document.getElementById('add-form').classList.toggle('open'); }
 
-function addTeacher(){
-  const name=document.getElementById('fn').value.trim();
-  if(!name){alert('Please enter a teacher name');return;}
-  const raw=document.getElementById('fi').value.trim().toUpperCase();
-  const initials=raw||name.split(' ').map(function(w){return w[0];}).join('').substring(0,3).toUpperCase();
-  const ministry=document.getElementById('fm').value.trim()||'Mid-Acts Dispensational';
-  const ci=TEACHERS.length%COLORS.length;
-  const t={id:'t'+Date.now(),name:name,ministry:ministry,initials:initials,bg:COLORS[ci].bg,fg:COLORS[ci].fg,files:{},on:false};
+function addTeacher() {
+  const name = document.getElementById('fn').value.trim();
+  if (!name) { alert('Please enter a teacher name'); return; }
+  const raw = document.getElementById('fi').value.trim().toUpperCase();
+  const initials = raw || name.split(' ').map(function(w) { return w[0]; }).join('').substring(0,3).toUpperCase();
+  const ministry = document.getElementById('fm').value.trim() || 'Mid-Acts Dispensational';
+  const ci = TEACHERS.length % COLORS.length;
+  const t = { id: 't' + Date.now(), name, ministry, initials, bg: COLORS[ci].bg, fg: COLORS[ci].fg, files: {}, on: false };
   TEACHERS.push(t);
-  document.getElementById('fn').value='';document.getElementById('fi').value='';document.getElementById('fm').value='';
+  document.getElementById('fn').value = ''; document.getElementById('fi').value = ''; document.getElementById('fm').value = '';
   toggleAddForm();
-  const sel=document.getElementById('note-tag');
-  const opt=document.createElement('option');opt.value=name;opt.textContent=name;sel.appendChild(opt);
-  activeId=t.id;renderTeacherList();
-  setStatus(name+' added — hover over their name and click the upload icon to load transcripts');
+  const sel = document.getElementById('note-tag');
+  const opt = document.createElement('option'); opt.value = name; opt.textContent = name; sel.appendChild(opt);
+  activeId = t.id; renderTeacherList();
+  setStatus(name + ' added — hover over their name and click the upload icon to load transcripts');
 }
 
-function updateBadges(){
-  document.getElementById('b-hist').textContent=searchHistory.length;
-  document.getElementById('b-notes').textContent=notes.length;
-  document.getElementById('b-cmp').textContent=TEACHERS.filter(function(t){return t.on;}).length;
+function updateBadges() {
+  document.getElementById('b-hist').textContent = searchHistory.length;
+  document.getElementById('b-notes').textContent = notes.length;
+  document.getElementById('b-cmp').textContent = TEACHERS.filter(function(t) { return t.on; }).length;
 }
 
-function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function escAttr(s){return(s||'').replace(/'/g,"\\'").replace(/\n/g,' ').substring(0,200);}
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s) { return (s||'').replace(/'/g,"\\'").replace(/\n/g,' ').substring(0,200); }
 
+// ── Init ─────────────────────────────────────────────────────────
 renderTeacherList();
 buildQuickTopics();
+checkHealth();
 loadData();
 </script>
 </body>
