@@ -53,10 +53,22 @@ app.use(express.json({ limit: '100mb' }));
 app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy',
     "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
+  // Never cache index.html
+  if (req.path === '/' || req.path === '/index.html') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
   next();
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Explicit route for root to bypass any caching
+app.get('/', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // ── Health check ─────────────────────────────────────────────────
 app.get('/api/health', async (req, res) => {
