@@ -666,8 +666,9 @@ async function addHistory(query, scopeLabel, teachers, mode) {
 function renderHistory() {
   const list = document.getElementById('history-list');
   const empty = document.getElementById('empty-history');
-  if (searchHistory.length === 0) { empty.style.display = 'flex'; list.innerHTML = ''; return; }
-  empty.style.display = 'none';
+  if (!list) return;
+  if (searchHistory.length === 0) { if (empty) empty.style.display = 'flex'; list.innerHTML = ''; return; }
+  if (empty) empty.style.display = 'none';
   list.innerHTML = '';
   searchHistory.forEach(function(h) {
     const d = new Date(h.ts);
