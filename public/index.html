@@ -505,11 +505,41 @@ function getContext(scopeOverride) {
       const combined = Object.entries(t.files)
         .map(function(e) { return '--- ' + e[0] + ' ---\n' + e[1]; })
         .join('\n\n');
-      return {
-        teacher: t,
-        content: combined.length > 22000 ? combined.substring(0, 22000) + '\n[truncated]' : combined
-      };
+      return { teacher: t, content: combined, totalChars: combined.length };
     });
+}
+
+function extractRelevantChunks(content, query, maxChars) {
+  // Split into paragraphs/chunks
+  const chunks = content.split(/\n{2,}/);
+  const terms = query.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 3; });
+  
+  // Score each chunk by keyword matches
+  const scored = chunks.map(function(chunk) {
+    const lower = chunk.toLowerCase();
+    const score = terms.reduce(function(acc, term) {
+      const matches = (lower.match(new RegExp(term, 'g')) || []).length;
+      return acc + matches;
+    }, 0);
+    return { chunk, score };
+  });
+  
+  // Sort by relevance, take top chunks up to maxChars
+  scored.sort(function(a, b) { return b.score - a.score; });
+  
+  let result = '';
+  let chars = 0;
+  for (const item of scored) {
+    if (item.score === 0) break; // no more relevant chunks
+    if (chars + item.chunk.length > maxChars) break;
+    result += item.chunk + '\n\n';
+    chars += item.chunk.length;
+  }
+  
+  // If nothing matched, fall back to first maxChars
+  if (!result) result = content.substring(0, maxChars) + '\n[showing first portion only — no keyword matches found]';
+  
+  return result;
 }
 
 // ── Search ───────────────────────────────────────────────────────
@@ -530,7 +560,8 @@ async function doSearch() {
   rl.innerHTML = ''; // clear first — this also removes empty-search div safely
 
   const contextText = ctx.map(function(x) {
-    return '=== ' + x.teacher.name + ' (' + x.teacher.ministry + ') ===\n' + x.content;
+    const relevant = extractRelevantChunks(x.content, q, 18000);
+    return '=== ' + x.teacher.name + ' (' + x.teacher.ministry + ') — ' + Object.keys(x.teacher.files).length + ' transcripts, showing relevant excerpts ===\n' + relevant;
   }).join('\n\n');
 
   const prompt = 'You are analyzing Bible teaching transcripts from Mid-Acts Dispensational teachers using the King James Bible.\n\nTeachers and transcripts:\n' + contextText + '\n\nQuestion: ' + q + '\n\nAnswer based ONLY on these transcripts. Compare views across teachers where relevant. Quote directly using teacher names. Use KJV references as they appear.';
@@ -584,7 +615,7 @@ async function doSummarize() {
   setStatus('Summarizing ' + t.name + '...', true);
   rl.innerHTML = ''; // clear first
   const combined = files.map(function(e) { return '--- ' + e[0] + ' ---\n' + e[1]; }).join('\n\n');
-  const trunc = combined.length > 40000 ? combined.substring(0, 40000) + '\n[truncated]' : combined;
+  const trunc = combined.length > 40000 ? combined.substring(0, 40000) + '\n[truncated — ' + Math.round(combined.length/1000) + 'k total chars across ' + files.length + ' transcripts]' : combined;
   const prompt = 'You are analyzing transcripts from ' + t.name + ', a Mid-Acts Dispensational teacher using the King James Bible.\n\n' + trunc + '\n\nProvide a comprehensive summary organized by doctrinal topic. Include KJV Scripture references as used.';
   try {
     const ans = await callClaude(prompt);
@@ -642,7 +673,7 @@ async function doCompare() {
   rl.appendChild(grid);
   await Promise.all(selected.map(async function(t) {
     const combined = Object.entries(t.files).map(function(e) { return '--- ' + e[0] + ' ---\n' + e[1]; }).join('\n\n');
-    const trunc = combined.length > 22000 ? combined.substring(0, 22000) + '\n[truncated]' : combined;
+    const trunc = extractRelevantChunks(combined, q, 18000);
     try {
       const ans = await callClaude('You are analyzing transcripts from ' + t.name + ', a Mid-Acts Dispensational teacher (KJV only).\n\n' + trunc + '\n\nQuestion: ' + q + '\n\nAnswer concisely (3-5 paragraphs) based ONLY on these transcripts.');
       document.getElementById('cmp-' + t.id).textContent = ans;
