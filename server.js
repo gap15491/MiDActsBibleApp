@@ -1,35 +1,55 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+// ── Postgres connection ──────────────────────────────────────────
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes('railway') || 
+       process.env.DATABASE_URL?.includes('neon')
+    ? { rejectUnauthorized: false }
+    : false
+});
 
-const DB_PATH = path.join(DATA_DIR, 'db.json');
+// ── Create tables on startup ─────────────────────────────────────
+async function initDB() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notes (
+      id TEXT PRIMARY KEY,
+      teacher TEXT,
+      topic TEXT,
+      content TEXT,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW(),
+      data JSONB
+    );
 
-function readDB() {
-  try {
-    if (fs.existsSync(DB_PATH)) {
-      return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
-    }
-  } catch(e) {}
-  return { notes: [], history: [] };
+    CREATE TABLE IF NOT EXISTS history (
+      id TEXT PRIMARY KEY,
+      query TEXT,
+      teacher TEXT,
+      result TEXT,
+      created_at TIMESTAMP DEFAULT NOW(),
+      data JSONB
+    );
+  `);
+  console.log('Database tables ready.');
 }
 
-function writeDB(data) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
-}
+initDB().catch(err => console.error('DB init error:', err));
 
+// ── Middleware ───────────────────────────────────────────────────
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ── Claude proxy (unchanged) ─────────────────────────────────────
 app.post('/api/claude', async (req, res) => {
   if (!ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set in Railway environment variables.' });
+    return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set.' });
   }
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -48,55 +68,101 @@ app.post('/api/claude', async (req, res) => {
   }
 });
 
-app.get('/api/notes', (req, res) => {
-  const db = readDB();
-  res.json(db.notes);
+// ── Notes API ────────────────────────────────────────────────────
+app.get('/api/notes', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT data FROM notes ORDER BY updated_at DESC'
+    );
+    res.json(result.rows.map(r => r.data));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.post('/api/notes', (req, res) => {
-  const db = readDB();
-  const idx = db.notes.findIndex(n => n.id == req.body.id);
-  if (idx >= 0) db.notes[idx] = req.body;
-  else db.notes.unshift(req.body);
-  writeDB(db);
-  res.json({ ok: true });
+app.post('/api/notes', async (req, res) => {
+  try {
+    const note = req.body;
+    await pool.query(`
+      INSERT INTO notes (id, teacher, topic, content, updated_at, data)
+      VALUES ($1, $2, $3, $4, NOW(), $5)
+      ON CONFLICT (id) DO UPDATE
+        SET teacher = $2, topic = $3, content = $4,
+            updated_at = NOW(), data = $5
+    `, [
+      note.id,
+      note.teacher || null,
+      note.topic || null,
+      note.content || null,
+      JSON.stringify(note)
+    ]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.delete('/api/notes/:id', (req, res) => {
-  const db = readDB();
-  db.notes = db.notes.filter(n => n.id != req.params.id);
-  writeDB(db);
-  res.json({ ok: true });
+app.delete('/api/notes/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM notes WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.get('/api/history', (req, res) => {
-  const db = readDB();
-  res.json(db.history.slice(0, 100));
+// ── History API ──────────────────────────────────────────────────
+app.get('/api/history', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT data FROM history ORDER BY created_at DESC LIMIT 100'
+    );
+    res.json(result.rows.map(r => r.data));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.post('/api/history', (req, res) => {
-  const db = readDB();
-  db.history = db.history.filter(h => h.id != req.body.id);
-  db.history.unshift(req.body);
-  if (db.history.length > 100) db.history = db.history.slice(0, 100);
-  writeDB(db);
-  res.json({ ok: true });
+app.post('/api/history', async (req, res) => {
+  try {
+    const entry = req.body;
+    await pool.query(`
+      INSERT INTO history (id, query, teacher, result, data)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (id) DO UPDATE
+        SET query = $2, teacher = $3, result = $4, data = $5
+    `, [
+      entry.id,
+      entry.query || null,
+      entry.teacher || null,
+      entry.result || null,
+      JSON.stringify(entry)
+    ]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.delete('/api/history', (req, res) => {
-  const db = readDB();
-  db.history = [];
-  writeDB(db);
-  res.json({ ok: true });
+app.delete('/api/history', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM history');
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.delete('/api/history/:id', (req, res) => {
-  const db = readDB();
-  db.history = db.history.filter(h => h.id != req.params.id);
-  writeDB(db);
-  res.json({ ok: true });
+app.delete('/api/history/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM history WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
+// ── Start ────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`MAD Study Library running on port ${PORT}`);
   if (!ANTHROPIC_API_KEY) console.warn('WARNING: ANTHROPIC_API_KEY not set.');
