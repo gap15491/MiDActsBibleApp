@@ -527,7 +527,8 @@ async function doSearch() {
   }
 
   setStatus('Searching ' + ctx.length + ' teacher' + (ctx.length !== 1 ? 's' : '') + '...', true);
-  document.getElementById('empty-search').style.display = 'none';
+  const emptySearch = document.getElementById('empty-search');
+  if (emptySearch) emptySearch.style.display = 'none';
   rl.innerHTML = '';
 
   const contextText = ctx.map(function(x) {
@@ -570,7 +571,8 @@ async function doSummarize() {
   }
   document.getElementById('q-search').value = 'Summary';
   setStatus('Summarizing ' + t.name + '...', true);
-  document.getElementById('empty-search').style.display = 'none';
+  const emptyEl = document.getElementById('empty-search');
+  if (emptyEl) emptyEl.style.display = 'none';
   rl.innerHTML = '';
   const combined = files.map(function(e) { return '--- ' + e[0] + ' ---\n' + e[1]; }).join('\n\n');
   const trunc = combined.length > 40000 ? combined.substring(0, 40000) + '\n[truncated]' : combined;
