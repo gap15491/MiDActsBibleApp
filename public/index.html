@@ -616,7 +616,8 @@ async function doCompare() {
   if (selected.length < 2) { setStatus('Select at least 2 teachers with transcripts'); return; }
   if (!q) { setStatus('Enter a question first'); return; }
   setStatus('Comparing ' + selected.length + ' teachers...', true);
-  document.getElementById('empty-compare').style.display = 'none';
+  const emptyCompare = document.getElementById('empty-compare');
+  if (emptyCompare) emptyCompare.style.display = 'none';
   rl.innerHTML = '';
   const cols = Math.min(selected.length, 3);
   const grid = document.createElement('div');
@@ -705,8 +706,10 @@ function openNote(id) {
   activeNoteId = id;
   const note = notes.find(function(n) { return n.id == id; });
   if (!note) return;
-  document.getElementById('note-empty').style.display = 'none';
-  document.getElementById('note-body').style.display = 'block';
+  const noteEmpty = document.getElementById('note-empty');
+  const noteBody = document.getElementById('note-body');
+  if (noteEmpty) noteEmpty.style.display = 'none';
+  if (noteBody) noteBody.style.display = 'block';
   document.getElementById('note-title').value = note.title || '';
   document.getElementById('note-tag').value = note.tag || '';
   document.getElementById('note-body').value = note.body || '';
@@ -733,8 +736,10 @@ async function deleteNote() {
   try { await api('DELETE', '/api/notes/' + activeNoteId); } catch(e) {}
   notes = notes.filter(function(n) { return n.id != activeNoteId; });
   activeNoteId = null;
-  document.getElementById('note-empty').style.display = 'flex';
-  document.getElementById('note-body').style.display = 'none';
+  const ne = document.getElementById('note-empty');
+  const nb = document.getElementById('note-body');
+  if (ne) ne.style.display = 'flex';
+  if (nb) nb.style.display = 'none';
   document.getElementById('note-title').value = '';
   renderNotesList(); updateBadges();
 }
