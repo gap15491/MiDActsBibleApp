@@ -266,9 +266,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <script>
-  // Safe getElementById wrapper — prevents null style errors
-function safeHide(id){ const e=document.getElementById(id); if(e) e.style.display='none'; }
-function safeShow(id,d){ const e=document.getElementById(id); if(e) e.style.display=d||'block'; }
 const COLORS=[
   {bg:'#9FE1CB',fg:'#085041'},{bg:'#B5D4F4',fg:'#0C447C'},{bg:'#FAC775',fg:'#633806'},
   {bg:'#F4C0D1',fg:'#72243E'},{bg:'#C0DD97',fg:'#27500A'},{bg:'#AFA9EC',fg:'#3C3489'},
@@ -530,9 +527,7 @@ async function doSearch() {
   }
 
   setStatus('Searching ' + ctx.length + ' teacher' + (ctx.length !== 1 ? 's' : '') + '...', true);
-  const emptySearch = document.getElementById('empty-search');
-  if (emptySearch) emptySearch.style.display = 'none';
-  rl.innerHTML = '';
+  rl.innerHTML = ''; // clear first — this also removes empty-search div safely
 
   const contextText = ctx.map(function(x) {
     return '=== ' + x.teacher.name + ' (' + x.teacher.ministry + ') ===\n' + x.content;
@@ -574,9 +569,7 @@ async function doSummarize() {
   }
   document.getElementById('q-search').value = 'Summary';
   setStatus('Summarizing ' + t.name + '...', true);
-  const emptyEl = document.getElementById('empty-search');
-  if (emptyEl) emptyEl.style.display = 'none';
-  rl.innerHTML = '';
+  rl.innerHTML = ''; // clear first
   const combined = files.map(function(e) { return '--- ' + e[0] + ' ---\n' + e[1]; }).join('\n\n');
   const trunc = combined.length > 40000 ? combined.substring(0, 40000) + '\n[truncated]' : combined;
   const prompt = 'You are analyzing transcripts from ' + t.name + ', a Mid-Acts Dispensational teacher using the King James Bible.\n\n' + trunc + '\n\nProvide a comprehensive summary organized by doctrinal topic. Include KJV Scripture references as used.';
@@ -619,8 +612,7 @@ async function doCompare() {
   if (selected.length < 2) { setStatus('Select at least 2 teachers with transcripts'); return; }
   if (!q) { setStatus('Enter a question first'); return; }
   setStatus('Comparing ' + selected.length + ' teachers...', true);
-  const emptyCompare = document.getElementById('empty-compare');
-  if (emptyCompare) emptyCompare.style.display = 'none';
+  rl.innerHTML = ''; // clear first
   rl.innerHTML = '';
   const cols = Math.min(selected.length, 3);
   const grid = document.createElement('div');
