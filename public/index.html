@@ -269,7 +269,8 @@ async function api(method,path,body){
 }
 
 async function callClaude(prompt){
-  const data=await api('POST','/api/claude',{model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]});
+  const data=await api('POST','/api/claude',{model:'claude-sonnet-4-6',
+max_tokens:1000,messages:[{role:'user',content:prompt}]});  
   if(data.error) throw new Error(data.error);
   return data.content?.[0]?.text||'No response.';
 }
