@@ -266,6 +266,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <script>
+  // Safe getElementById wrapper — prevents null style errors
+function safeHide(id){ const e=document.getElementById(id); if(e) e.style.display='none'; }
+function safeShow(id,d){ const e=document.getElementById(id); if(e) e.style.display=d||'block'; }
 const COLORS=[
   {bg:'#9FE1CB',fg:'#085041'},{bg:'#B5D4F4',fg:'#0C447C'},{bg:'#FAC775',fg:'#633806'},
   {bg:'#F4C0D1',fg:'#72243E'},{bg:'#C0DD97',fg:'#27500A'},{bg:'#AFA9EC',fg:'#3C3489'},
