@@ -542,12 +542,25 @@ async function doSearch() {
     const badges = ctx.map(function(x) {
       return '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;background:' + x.teacher.bg + ';color:' + x.teacher.fg + ';margin-right:4px;">' + escHtml(x.teacher.name) + '</span>';
     }).join('');
-    card.innerHTML =
-      '<div class="rcard-head"><i class="ti ti-search" style="font-size:14px;color:#888;"></i>' +
-      '<span class="rcard-q">' + escHtml(q) + '</span>' +
-      '<button class="btn" style="font-size:11px;" onclick="saveSearchAsNote(\'' + escAttr(q) + '\',\'' + escAttr(ans.substring(0,300)) + '\')"><i class="ti ti-notes"></i>Save to notes</button></div>' +
-      '<div style="margin-bottom:10px;">' + badges + '</div>' +
-      '<div class="rcard-text">' + escHtml(ans) + '</div>';
+    // Build card safely without inline onclick strings
+    const head = document.createElement('div');
+    head.className = 'rcard-head';
+    head.innerHTML = '<i class="ti ti-search" style="font-size:14px;color:#888;"></i><span class="rcard-q">' + escHtml(q) + '</span>';
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn';
+    saveBtn.style.fontSize = '11px';
+    saveBtn.innerHTML = '<i class="ti ti-notes"></i>Save to notes';
+    saveBtn.addEventListener('click', function() { saveSearchAsNote(q, ans.substring(0, 300)); });
+    head.appendChild(saveBtn);
+    card.appendChild(head);
+    const badgeDiv = document.createElement('div');
+    badgeDiv.style.marginBottom = '10px';
+    badgeDiv.innerHTML = badges;
+    card.appendChild(badgeDiv);
+    const textDiv = document.createElement('div');
+    textDiv.className = 'rcard-text';
+    textDiv.textContent = ans;
+    card.appendChild(textDiv);
     rl.appendChild(card);
     await addHistory(q, scope === 'all' ? 'All teachers' : 'Current teacher', ctx.map(function(x) { return x.teacher.name; }).join(', '), 'search');
     setStatus('Done — ' + ctx.length + ' teacher' + (ctx.length !== 1 ? 's' : '') + ' searched');
