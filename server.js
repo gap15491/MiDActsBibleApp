@@ -48,6 +48,14 @@ async function initDB() {
 initDB().catch(e => console.error('DB init error:', e));
 
 app.use(express.json({ limit: '100mb' }));
+
+// Override CSP to allow fetch calls to Anthropic API
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy',
+    "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Health check ─────────────────────────────────────────────────
