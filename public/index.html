@@ -348,13 +348,22 @@ async function api(method, path, body) {
   return data;
 }
 
-async function callClaude(prompt) {
+async function callClaude(prompt, retries) {
+  retries = retries || 0;
   const data = await api('POST', '/api/claude', {
     model: 'claude-sonnet-4-6',
     max_tokens: 8000,
     messages: [{ role: 'user', content: prompt }]
   });
-  if (data.error) throw new Error(data.error);
+  if (data.error) {
+    // Retry on rate limit with backoff
+    if ((data.error.includes('429') || data.error.includes('rate')) && retries < 2) {
+      setStatus('Rate limit — retrying in ' + (retries + 1) * 5 + ' seconds...', true);
+      await new Promise(function(r){ setTimeout(r, (retries + 1) * 5000); });
+      return callClaude(prompt, retries + 1);
+    }
+    throw new Error(data.error);
+  }
   return data.content?.[0]?.text || 'No response.';
 }
 
@@ -691,7 +700,7 @@ async function doSearch() {
   rl.innerHTML = ''; // clear results
 
   const contextText = ctx.map(function(x) {
-    const perTeacherMax = ctx.length > 1 ? Math.floor(400000 / ctx.length) : 400000;
+    const perTeacherMax = ctx.length > 1 ? Math.floor(120000 / ctx.length) : 120000;
     const relevant = extractRelevantChunks(x.files, q, perTeacherMax);
     return '=== ' + x.teacher.name + ' (' + x.teacher.ministry + ') — ' + x.files.length + ' transcripts ===\n' + relevant;
   }).join('\n\n');
@@ -871,7 +880,7 @@ async function doSummarize() {
   setStatus('Summarizing ' + t.name + '...', true);
   rl.innerHTML = ''; // clear first
   const combined = files.map(function(e) { return '--- ' + e[0] + ' ---\n' + e[1]; }).join('\n\n');
-  const trunc = combined.length > 400000 ? combined.substring(0, 400000) + '\n[truncated — ' + Math.round(combined.length/1000) + 'k total chars across ' + files.length + ' transcripts]' : combined;
+  const trunc = combined.length > 120000 ? combined.substring(0, 120000) + '\n[truncated — ' + Math.round(combined.length/1000) + 'k total chars across ' + files.length + ' transcripts]' : combined;
   const prompt = 'You are analyzing transcripts from ' + t.name + ', a Mid-Acts Dispensational teacher using the King James Bible.\n\n' + trunc + '\n\nProvide a comprehensive summary organized by doctrinal topic. Include KJV Scripture references as used.';
   try {
     const ans = await callClaude(prompt);
@@ -929,7 +938,7 @@ async function doCompare() {
   rl.appendChild(grid);
   await Promise.all(selected.map(async function(t) {
     const fileEntries = Object.entries(t.files);
-    const trunc = extractRelevantChunks(fileEntries, q, 400000);
+    const trunc = extractRelevantChunks(fileEntries, q, 120000);
     try {
       const ans = await callClaude('You are analyzing transcripts from ' + t.name + ', a Mid-Acts Dispensational teacher (KJV only).\n\n' + trunc + '\n\nQuestion: ' + q + '\n\nAnswer concisely (3-5 paragraphs) based ONLY on these transcripts.');
       document.getElementById('cmp-' + t.id).textContent = ans;
