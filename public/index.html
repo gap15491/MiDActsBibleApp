@@ -399,13 +399,28 @@ async function checkHealth() {
 // ── Load all persistent data ─────────────────────────────────────
 async function loadData() {
   try {
-    const [h, n, txs] = await Promise.all([
+    const [h, n, txs, customTeachers] = await Promise.all([
       api('GET', '/api/history'),
       api('GET', '/api/notes'),
-      api('GET', '/api/transcripts')
+      api('GET', '/api/transcripts'),
+      api('GET', '/api/teachers')
     ]);
     searchHistory = Array.isArray(h) ? h : [];
     notes = Array.isArray(n) ? n : [];
+
+    // Restore custom teachers that aren't already in the hardcoded list
+    if (Array.isArray(customTeachers)) {
+      customTeachers.forEach(function(ct) {
+        if (!TEACHERS.find(function(t) { return t.id === ct.id; })) {
+          TEACHERS.push({
+            id: ct.id, name: ct.name, ministry: ct.ministry || '',
+            initials: ct.initials || ct.name.substring(0,2).toUpperCase(),
+            bg: ct.bg || '#9FE1CB', fg: ct.fg || '#085041',
+            files: {}, on: false, custom: true
+          });
+        }
+      });
+    }
 
     // Restore transcripts into TEACHERS
     if (Array.isArray(txs)) {
@@ -466,7 +481,8 @@ function renderTeacherList() {
     actions.className = 't-actions';
     actions.innerHTML =
       '<button class="icon-btn" title="Upload" onclick="event.stopPropagation();uploadFor(\'' + t.id + '\')"><i class="ti ti-upload"></i></button>' +
-      '<button class="icon-btn" title="Clear all transcripts" onclick="event.stopPropagation();clearTeacher(\'' + t.id + '\')"><i class="ti ti-trash"></i></button>';
+      '<button class="icon-btn" title="Clear all transcripts" onclick="event.stopPropagation();clearTeacher(\'' + t.id + '\')"><i class="ti ti-trash"></i></button>' +
+      (t.custom ? '<button class="icon-btn" title="Remove teacher" style="color:#c00;" onclick="event.stopPropagation();removeTeacher(\'' + t.id + '\')"><i class="ti ti-user-minus"></i></button>' : '');
     el.appendChild(av);
     el.appendChild(info);
     el.appendChild(actions);
@@ -513,6 +529,16 @@ async function handleFiles(fileList) {
   document.getElementById('file-input').value = '';
   renderTeacherList();
   setStatus(t.name + ' — ' + Object.keys(t.files).length + ' transcripts loaded and saved');
+}
+
+async function removeTeacher(id) {
+  if (!confirm('Remove this teacher and all their transcripts permanently?')) return;
+  try { await api('DELETE', '/api/teachers/' + id); } catch(e) {}
+  const idx = TEACHERS.findIndex(function(t) { return t.id === id; });
+  if (idx >= 0) TEACHERS.splice(idx, 1);
+  if (activeId === id) activeId = TEACHERS[0]?.id || '';
+  renderTeacherList();
+  setStatus('Teacher removed');
 }
 
 async function clearTeacher(id) {
@@ -1072,21 +1098,23 @@ function renderNotesList() {
 // ── Add teacher ───────────────────────────────────────────────────
 function toggleAddForm() { document.getElementById('add-form').classList.toggle('open'); }
 
-function addTeacher() {
+async function addTeacher() {
   const name = document.getElementById('fn').value.trim();
   if (!name) { alert('Please enter a teacher name'); return; }
   const raw = document.getElementById('fi').value.trim().toUpperCase();
   const initials = raw || name.split(' ').map(function(w) { return w[0]; }).join('').substring(0,3).toUpperCase();
   const ministry = document.getElementById('fm').value.trim() || 'Mid-Acts Dispensational';
   const ci = TEACHERS.length % COLORS.length;
-  const t = { id: 't' + Date.now(), name, ministry, initials, bg: COLORS[ci].bg, fg: COLORS[ci].fg, files: {}, on: false };
+  const t = { id: 't' + Date.now(), name, ministry, initials, bg: COLORS[ci].bg, fg: COLORS[ci].fg, files: {}, on: false, custom: true };
   TEACHERS.push(t);
+  // Save to DB
+  try { await api('POST', '/api/teachers', { id: t.id, name: t.name, ministry: t.ministry, initials: t.initials, bg: t.bg, fg: t.fg }); } catch(e) { console.warn('Could not save teacher:', e); }
   document.getElementById('fn').value = ''; document.getElementById('fi').value = ''; document.getElementById('fm').value = '';
   toggleAddForm();
   const sel = document.getElementById('note-tag');
   const opt = document.createElement('option'); opt.value = name; opt.textContent = name; sel.appendChild(opt);
   activeId = t.id; renderTeacherList();
-  setStatus(name + ' added — hover over their name and click the upload icon to load transcripts');
+  setStatus(name + ' added and saved permanently');
 }
 
 function updateBadges() {
