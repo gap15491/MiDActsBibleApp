@@ -70,10 +70,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .empty i{font-size:40px;color:#ccc;}
 .empty-t{font-size:15px;font-weight:500;color:#555;}
 .empty-s{font-size:13px;color:#888;max-width:320px;line-height:1.6;}
-.rcard{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:16px;margin-bottom:12px;}
+.rcard{background:#fff;border:1px solid #e0e0e0;border-radius:14px;margin-bottom:20px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.07);}
+.rcard-header{display:flex;align-items:center;gap:10px;padding:14px 18px;background:linear-gradient(135deg,#1a6b3a 0%,#145c30 100%);}
+.rcard-header i{font-size:18px;color:rgba(255,255,255,0.85);}
+.rcard-q{font-size:14px;font-weight:600;color:#fff;flex:1;letter-spacing:0.01em;}
+.rcard-save{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:5px 12px;border-radius:20px;cursor:pointer;font-size:11px;display:flex;align-items:center;gap:4px;white-space:nowrap;}
+.rcard-save:hover{background:rgba(255,255,255,0.28);}
+.rcard-meta{display:flex;align-items:center;gap:6px;padding:10px 18px;background:#f7faf8;border-bottom:1px solid #e5ede8;flex-wrap:wrap;}
+.rcard-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.rcard-stat{font-size:11px;color:#888;margin-left:auto;display:flex;align-items:center;gap:4px;}
+.rcard-body{padding:20px;}
+.rcard-text{font-size:13.5px;color:#1a1a1a;line-height:2;white-space:pre-wrap;}
+.rcard-footer{padding:10px 18px;background:#f7faf8;border-top:1px solid #e5ede8;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.rcard-term{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;background:#e4f0e9;color:#1a6b3a;border:1px solid #b8d9c4;font-weight:600;}
+.rcard-time{font-size:10px;color:#bbb;margin-left:auto;}
 .rcard-head{display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #e0e0e0;}
-.rcard-q{font-size:13px;font-weight:500;color:#555;flex:1;}
-.rcard-text{font-size:13px;color:#1a1a1a;line-height:1.8;white-space:pre-wrap;}
+.rcard-head i{font-size:14px;color:#888;}
+.rcard-text-old{font-size:13px;color:#1a1a1a;line-height:1.8;white-space:pre-wrap;}
+.errcard{background:#fff0f0;border:1px solid #f5c6c6;border-radius:14px;padding:16px;margin-bottom:12px;color:#b00020;font-size:13px;line-height:1.7;}
 .cmp-bar{background:#fff;border-bottom:1px solid #e0e0e0;padding:10px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .chips{display:flex;gap:6px;flex-wrap:wrap;}
 .chip{padding:4px 11px;font-size:11px;border-radius:20px;border:1px solid #e0e0e0;cursor:pointer;background:#f5f5f5;color:#555;display:flex;align-items:center;gap:5px;user-select:none;}
@@ -511,14 +525,29 @@ function getContext(scopeOverride) {
 function extractRelevantChunks(fileEntries, query, maxChars) {
   const STOP_WORDS = new Set(['the','is','are','was','were','and','but','or','of','to','in','it','its','this','that','these','those','who','what','when','where','why','how','a','an','be','been','has','have','had','do','does','did','will','would','could','should','may','might','with','for','on','at','by','from','as','not','no','so','if','then','than','also','into','about','which','there','their','they','them','we','our','you','your','he','she','his','her','his']);
   
-  const terms = query.toLowerCase()
-    .replace(/[?!.,;:'"]/g, '')
+  const cleanQuery = query.toLowerCase().replace(/[?!.,;:'"]/g, '');
+  
+  const terms = cleanQuery
     .split(/\s+/)
     .filter(function(w) { return w.length > 2 && !STOP_WORDS.has(w); });
 
+  // Also build meaningful 2-word phrases from the cleaned query (excluding stop words)
+  const allWords = cleanQuery.split(/\s+/);
+  const phrases = [];
+  for (let i = 0; i < allWords.length - 1; i++) {
+    const w1 = allWords[i], w2 = allWords[i+1];
+    // Include phrase if at least one word is meaningful
+    if ((!STOP_WORDS.has(w1) || !STOP_WORDS.has(w2)) && w1.length > 2 && w2.length > 2) {
+      phrases.push(w1 + ' ' + w2);
+    }
+  }
+
   // If all words filtered out, fall back to all words > 2 chars
   const searchTerms = terms.length > 0 ? terms : 
-    query.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 3; });
+    cleanQuery.split(/\s+/).filter(function(w) { return w.length > 3; });
+
+  // Combine: phrases first (higher specificity), then individual terms
+  const allSearchTerms = phrases.concat(searchTerms);
 
   if (searchTerms.length === 0) {
     let fb = '';
@@ -538,12 +567,16 @@ function extractRelevantChunks(fileEntries, query, maxChars) {
     const lower = content.toLowerCase();
 
     const positions = [];
-    searchTerms.forEach(function(term) {
+    // Search phrases first (score x3 for phrase match), then individual terms
+    allSearchTerms.forEach(function(term) {
+      const isPhrase = term.includes(' ');
       let idx = 0;
       while (true) {
         const pos = lower.indexOf(term, idx);
         if (pos === -1) break;
+        // Add multiple entries for phrases to boost their score
         positions.push(pos);
+        if (isPhrase) { positions.push(pos); positions.push(pos); }
         idx = pos + 1;
       }
     });
@@ -575,7 +608,7 @@ function extractRelevantChunks(fileEntries, query, maxChars) {
   });
 
   if (allHits.length === 0) {
-    return '[No matches found for "' + query + '" (searched terms: ' + searchTerms.join(', ') + ') across ' + fileEntries.length + ' transcript files]\n\n' +
+    return '[No matches found for "' + query + '" (searched: ' + allSearchTerms.slice(0,8).join(', ') + ') across ' + fileEntries.length + ' transcript files]\n\n' +
            fileEntries[0][1].substring(0, 2000);
   }
 
@@ -594,7 +627,7 @@ function extractRelevantChunks(fileEntries, query, maxChars) {
   }
 
   const filesHit = Object.keys(fileCount).length;
-  return '[Found relevant content in ' + filesHit + ' of ' + fileEntries.length + ' transcript files — searched terms: ' + searchTerms.join(', ') + ']\n\n' + result;
+  return '[Found relevant content in ' + filesHit + ' of ' + fileEntries.length + ' files — searched: ' + allSearchTerms.slice(0,8).join(', ') + ']\n\n' + result;
 }
 
 // ── Search ───────────────────────────────────────────────────────
@@ -626,28 +659,75 @@ async function doSearch() {
     const ans = await callClaude(prompt);
     const card = document.createElement('div');
     card.className = 'rcard';
-    const badges = ctx.map(function(x) {
-      return '<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;background:' + x.teacher.bg + ';color:' + x.teacher.fg + ';margin-right:4px;">' + escHtml(x.teacher.name) + '</span>';
-    }).join('');
-    // Build card safely without inline onclick strings
-    const head = document.createElement('div');
-    head.className = 'rcard-head';
-    head.innerHTML = '<i class="ti ti-search" style="font-size:14px;color:#888;"></i><span class="rcard-q">' + escHtml(q) + '</span>';
+
+    // ── Header (green gradient bar) ──────────────────────────────
+    const header = document.createElement('div');
+    header.className = 'rcard-header';
+    header.innerHTML = '<i class="ti ti-bible"></i><span class="rcard-q">' + escHtml(q) + '</span>';
     const saveBtn = document.createElement('button');
-    saveBtn.className = 'btn';
-    saveBtn.style.fontSize = '11px';
-    saveBtn.innerHTML = '<i class="ti ti-notes"></i>Save to notes';
+    saveBtn.className = 'rcard-save';
+    saveBtn.innerHTML = '<i class="ti ti-notes" style="font-size:12px;"></i>Save to notes';
     saveBtn.addEventListener('click', function() { saveSearchAsNote(q, ans.substring(0, 300)); });
-    head.appendChild(saveBtn);
-    card.appendChild(head);
-    const badgeDiv = document.createElement('div');
-    badgeDiv.style.marginBottom = '10px';
-    badgeDiv.innerHTML = badges;
-    card.appendChild(badgeDiv);
+    header.appendChild(saveBtn);
+    card.appendChild(header);
+
+    // ── Meta bar (teacher badges + stats) ───────────────────────
+    const meta = document.createElement('div');
+    meta.className = 'rcard-meta';
+    ctx.forEach(function(x) {
+      const badge = document.createElement('span');
+      badge.className = 'rcard-badge';
+      badge.style.background = x.teacher.bg;
+      badge.style.color = x.teacher.fg;
+      badge.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:' + x.teacher.fg + ';opacity:0.5;display:inline-block;"></span>' + escHtml(x.teacher.name);
+      meta.appendChild(badge);
+    });
+    const stat = document.createElement('span');
+    stat.className = 'rcard-stat';
+    const totalFiles = ctx.reduce(function(a, x) { return a + x.files.length; }, 0);
+    stat.innerHTML = '<i class="ti ti-files"></i>' + totalFiles.toLocaleString() + ' transcripts searched';
+    meta.appendChild(stat);
+    card.appendChild(meta);
+
+    // ── Body (answer text with markdown-style rendering) ─────────
+    const body = document.createElement('div');
+    body.className = 'rcard-body';
     const textDiv = document.createElement('div');
     textDiv.className = 'rcard-text';
-    textDiv.textContent = ans;
-    card.appendChild(textDiv);
+    // Light markdown: bold **text**, headers ##, bullet -
+    textDiv.innerHTML = ans
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#1a6b3a;font-weight:600;">$1</strong>')
+      .replace(/^## (.*)/gm, '<div style="font-size:15px;font-weight:700;color:#1a3a25;margin:16px 0 8px;border-bottom:1px solid #e0ece5;padding-bottom:6px;">$1</div>')
+      .replace(/^### (.*)/gm, '<div style="font-size:13px;font-weight:700;color:#1a6b3a;margin:12px 0 4px;">$1</div>')
+      .replace(/^- (.*)/gm, '<div style="display:flex;gap:8px;margin:4px 0;"><span style="color:#1a6b3a;margin-top:2px;">•</span><span>$1</span></div>')
+      .replace(/^> (.*)/gm, '<div style="border-left:3px solid #1a6b3a;padding:6px 12px;margin:8px 0;background:#f0f7f3;border-radius:0 6px 6px 0;font-style:italic;color:#2a5a3a;">$1</div>')
+      .replace(/\n/g, '<br>');
+    body.appendChild(textDiv);
+    card.appendChild(body);
+
+    // ── Footer (search terms used + timestamp) ───────────────────
+    const footer = document.createElement('div');
+    footer.className = 'rcard-footer';
+    const termLabel = document.createElement('span');
+    termLabel.style.cssText = 'font-size:10px;color:#aaa;margin-right:4px;';
+    termLabel.textContent = 'Searched:';
+    footer.appendChild(termLabel);
+    // Extract search terms from the answer header line if present
+    const termMatch = ans.match(/searched: ([^\]]+)\]/);
+    const displayTerms = termMatch ? termMatch[1].split(',').slice(0,6) : q.split(' ').filter(function(w){ return w.length > 3; }).slice(0,6);
+    displayTerms.forEach(function(term) {
+      const t = document.createElement('span');
+      t.className = 'rcard-term';
+      t.textContent = term.trim();
+      footer.appendChild(t);
+    });
+    const ts = document.createElement('span');
+    ts.className = 'rcard-time';
+    ts.textContent = new Date().toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
+    footer.appendChild(ts);
+    card.appendChild(footer);
+
     rl.appendChild(card);
     await addHistory(q, scope === 'all' ? 'All teachers' : 'Current teacher', ctx.map(function(x) { return x.teacher.name; }).join(', '), 'search');
     setStatus('Done — ' + ctx.length + ' teacher' + (ctx.length !== 1 ? 's' : '') + ' searched');
