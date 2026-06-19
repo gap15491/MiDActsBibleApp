@@ -41,6 +41,16 @@ async function initDB() {
       size INTEGER,
       uploaded_at TIMESTAMP DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS teachers (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      ministry TEXT,
+      initials TEXT,
+      bg TEXT,
+      fg TEXT,
+      is_custom BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
   `);
   console.log('DB tables ready.');
 }
@@ -227,6 +237,41 @@ app.delete('/api/history/:id', async (req, res) => {
   try {
     if (pool) { await pool.query('DELETE FROM history WHERE id=$1', [req.params.id]); }
     else { mem.history = mem.history.filter(h => h.id != req.params.id); }
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Teachers ──────────────────────────────────────────────────────
+app.get('/api/teachers', async (req, res) => {
+  try {
+    if (pool) {
+      const r = await pool.query('SELECT * FROM teachers WHERE is_custom = TRUE ORDER BY created_at');
+      res.json(r.rows);
+    } else { res.json([]); }
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/teachers', async (req, res) => {
+  const { id, name, ministry, initials, bg, fg } = req.body;
+  if (!id || !name) return res.status(400).json({ error: 'Missing fields' });
+  try {
+    if (pool) {
+      await pool.query(`
+        INSERT INTO teachers (id, name, ministry, initials, bg, fg, is_custom)
+        VALUES ($1,$2,$3,$4,$5,$6,TRUE)
+        ON CONFLICT (id) DO UPDATE SET name=$2, ministry=$3, initials=$4, bg=$5, fg=$6
+      `, [id, name, ministry||'', initials||'', bg||'#9FE1CB', fg||'#085041']);
+    }
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/teachers/:id', async (req, res) => {
+  try {
+    if (pool) {
+      await pool.query('DELETE FROM teachers WHERE id=$1', [req.params.id]);
+      await pool.query('DELETE FROM transcripts WHERE teacher_id=$1', [req.params.id]);
+    }
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
