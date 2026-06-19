@@ -502,61 +502,98 @@ function getContext(scopeOverride) {
   return teachers
     .filter(function(t) { return Object.keys(t.files).length > 0; })
     .map(function(t) {
-      const combined = Object.entries(t.files)
-        .map(function(e) { return '--- ' + e[0] + ' ---\n' + e[1]; })
-        .join('\n\n');
-      return { teacher: t, content: combined, totalChars: combined.length };
+      // Keep files separate so we can tag excerpts with their source
+      const fileEntries = Object.entries(t.files);
+      return { teacher: t, files: fileEntries, totalChars: fileEntries.reduce(function(a, e) { return a + e[1].length; }, 0) };
     });
 }
 
-// Search ALL transcript text locally, extract windows around every match
-function extractRelevantChunks(content, query, maxChars) {
+// Search ALL transcript text locally, file by file, extract windows tagged with source filename
+function extractRelevantChunks(fileEntries, query, maxChars) {
   const terms = query.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 2; });
-  if (terms.length === 0) return content.substring(0, maxChars);
-
-  const lower = content.toLowerCase();
-  const WINDOW = 600; // chars before and after each match
-  const hits = []; // {start, end}
-
-  // Find every occurrence of every term
-  terms.forEach(function(term) {
-    let idx = 0;
-    while (true) {
-      const pos = lower.indexOf(term, idx);
-      if (pos === -1) break;
-      hits.push({ start: Math.max(0, pos - WINDOW), end: Math.min(content.length, pos + term.length + WINDOW) });
-      idx = pos + 1;
+  if (terms.length === 0) {
+    // No usable terms — return beginning of first few files
+    let fb = '';
+    for (const [name, content] of fileEntries) {
+      fb += '[Source: ' + name + ']\n' + content.substring(0, 2000) + '\n\n---\n\n';
+      if (fb.length > maxChars) break;
     }
+    return fb;
+  }
+
+  const WINDOW = 500; // chars of context around each match
+  const allHits = []; // { filename, start, end, score }
+
+  fileEntries.forEach(function(entry) {
+    const filename = entry[0];
+    const content = entry[1];
+    const lower = content.toLowerCase();
+
+    // Find all match positions in this file
+    const positions = [];
+    terms.forEach(function(term) {
+      let idx = 0;
+      while (true) {
+        const pos = lower.indexOf(term, idx);
+        if (pos === -1) break;
+        positions.push(pos);
+        idx = pos + 1;
+      }
+    });
+
+    if (positions.length === 0) return;
+
+    // Build windows around each match position
+    const windows = positions.map(function(pos) {
+      return { start: Math.max(0, pos - WINDOW), end: Math.min(content.length, pos + WINDOW) };
+    });
+
+    // Merge overlapping windows
+    windows.sort(function(a, b) { return a.start - b.start; });
+    const merged = [windows[0]];
+    for (let i = 1; i < windows.length; i++) {
+      const last = merged[merged.length - 1];
+      if (windows[i].start <= last.end) {
+        last.end = Math.max(last.end, windows[i].end);
+      } else {
+        merged.push(windows[i]);
+      }
+    }
+
+    merged.forEach(function(win) {
+      allHits.push({
+        filename: filename,
+        text: content.substring(win.start, win.end),
+        score: positions.filter(function(p) { return p >= win.start && p <= win.end; }).length
+      });
+    });
   });
 
-  if (hits.length === 0) {
-    // No matches at all — return first portion
-    return '[No exact matches found for "' + query + '" — showing beginning of transcripts]\n\n' + content.substring(0, maxChars);
+  if (allHits.length === 0) {
+    return '[No matches found for "' + query + '" across ' + fileEntries.length + ' transcript files]\n\n' +
+           fileEntries[0][1].substring(0, 2000);
   }
 
-  // Sort and merge overlapping windows
-  hits.sort(function(a, b) { return a.start - b.start; });
-  const merged = [hits[0]];
-  for (let i = 1; i < hits.length; i++) {
-    const last = merged[merged.length - 1];
-    if (hits[i].start <= last.end) {
-      last.end = Math.max(last.end, hits[i].end);
-    } else {
-      merged.push(hits[i]);
-    }
+  // Sort by score descending (most matches in window first)
+  allHits.sort(function(a, b) { return b.score - a.score; });
+
+  // Build result tagged with source filenames
+  let result = '[Found matches in transcripts — excerpts tagged with source file]\n\n';
+  let chars = result.length;
+  const fileCount = {};
+
+  for (const hit of allHits) {
+    const block = '[Source: ' + hit.filename + ']\n' + hit.text.trim() + '\n\n---\n\n';
+    if (chars + block.length > maxChars) break;
+    result += block;
+    chars += block.length;
+    fileCount[hit.filename] = (fileCount[hit.filename] || 0) + 1;
   }
 
-  // Build result from merged windows up to maxChars
-  let result = '';
-  let chars = 0;
-  for (const win of merged) {
-    const excerpt = content.substring(win.start, win.end);
-    if (chars + excerpt.length > maxChars) break;
-    result += excerpt + '\n\n---\n\n';
-    chars += excerpt.length;
-  }
+  const filesHit = Object.keys(fileCount).length;
+  result = '[Found relevant content in ' + filesHit + ' of ' + fileEntries.length + ' transcript files — showing top excerpts by relevance]\n\n' + result.substring(result.indexOf('\n\n') + 2);
 
-  return '[Found ' + hits.length + ' match' + (hits.length !== 1 ? 'es' : '') + ' across ' + merged.length + ' excerpt' + (merged.length !== 1 ? 's' : '') + ' from ' + Object.keys(getContext()[0]?.teacher.files || {}).length + ' transcripts]\n\n' + result;
+  return result;
 }
 
 // ── Search ───────────────────────────────────────────────────────
@@ -577,11 +614,11 @@ async function doSearch() {
   rl.innerHTML = ''; // clear first — this also removes empty-search div safely
 
   const contextText = ctx.map(function(x) {
-    const relevant = extractRelevantChunks(x.content, q, 18000);
-    return '=== ' + x.teacher.name + ' (' + x.teacher.ministry + ') — ' + Object.keys(x.teacher.files).length + ' transcripts, showing relevant excerpts ===\n' + relevant;
+    const relevant = extractRelevantChunks(x.files, q, 18000);
+    return '=== ' + x.teacher.name + ' (' + x.teacher.ministry + ') — ' + x.files.length + ' transcripts ===\n' + relevant;
   }).join('\n\n');
 
-  const prompt = 'You are analyzing Bible teaching transcripts from Mid-Acts Dispensational teachers using the King James Bible.\n\nTeachers and transcripts:\n' + contextText + '\n\nQuestion: ' + q + '\n\nAnswer based ONLY on these transcripts. Compare views across teachers where relevant. Quote directly using teacher names. Use KJV references as they appear.';
+  const prompt = 'You are analyzing Bible teaching transcripts from Mid-Acts Dispensational teachers using the King James Bible.\n\nEach excerpt below is tagged with [Source: filename] indicating which transcript file it came from. When quoting or referencing content, cite the source filename so the user knows exactly which teaching the material comes from.\n\nTeachers and transcript excerpts:\n' + contextText + '\n\nQuestion: ' + q + '\n\nAnswer based ONLY on these excerpts. Cite the source filename for each quote or reference. Compare views across teachers where relevant. Use KJV references as they appear.';
 
   try {
     const ans = await callClaude(prompt);
@@ -689,8 +726,8 @@ async function doCompare() {
   });
   rl.appendChild(grid);
   await Promise.all(selected.map(async function(t) {
-    const combined = Object.entries(t.files).map(function(e) { return '--- ' + e[0] + ' ---\n' + e[1]; }).join('\n\n');
-    const trunc = extractRelevantChunks(combined, q, 18000);
+    const fileEntries = Object.entries(t.files);
+    const trunc = extractRelevantChunks(fileEntries, q, 18000);
     try {
       const ans = await callClaude('You are analyzing transcripts from ' + t.name + ', a Mid-Acts Dispensational teacher (KJV only).\n\n' + trunc + '\n\nQuestion: ' + q + '\n\nAnswer concisely (3-5 paragraphs) based ONLY on these transcripts.');
       document.getElementById('cmp-' + t.id).textContent = ans;
