@@ -509,38 +509,54 @@ function getContext(scopeOverride) {
     });
 }
 
+// Search ALL transcript text locally, extract windows around every match
 function extractRelevantChunks(content, query, maxChars) {
-  // Split into paragraphs/chunks
-  const chunks = content.split(/\n{2,}/);
-  const terms = query.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 2; }); // lowered from 3 to 2
-  
-  // Score each chunk by keyword matches
-  const scored = chunks.map(function(chunk) {
-    const lower = chunk.toLowerCase();
-    const score = terms.reduce(function(acc, term) {
-      const matches = (lower.match(new RegExp(term, 'g')) || []).length;
-      return acc + matches;
-    }, 0);
-    return { chunk, score };
+  const terms = query.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 2; });
+  if (terms.length === 0) return content.substring(0, maxChars);
+
+  const lower = content.toLowerCase();
+  const WINDOW = 600; // chars before and after each match
+  const hits = []; // {start, end}
+
+  // Find every occurrence of every term
+  terms.forEach(function(term) {
+    let idx = 0;
+    while (true) {
+      const pos = lower.indexOf(term, idx);
+      if (pos === -1) break;
+      hits.push({ start: Math.max(0, pos - WINDOW), end: Math.min(content.length, pos + term.length + WINDOW) });
+      idx = pos + 1;
+    }
   });
-  
-  // Sort by relevance, take top chunks up to maxChars
-  scored.sort(function(a, b) { return b.score - a.score; });
-  
+
+  if (hits.length === 0) {
+    // No matches at all — return first portion
+    return '[No exact matches found for "' + query + '" — showing beginning of transcripts]\n\n' + content.substring(0, maxChars);
+  }
+
+  // Sort and merge overlapping windows
+  hits.sort(function(a, b) { return a.start - b.start; });
+  const merged = [hits[0]];
+  for (let i = 1; i < hits.length; i++) {
+    const last = merged[merged.length - 1];
+    if (hits[i].start <= last.end) {
+      last.end = Math.max(last.end, hits[i].end);
+    } else {
+      merged.push(hits[i]);
+    }
+  }
+
+  // Build result from merged windows up to maxChars
   let result = '';
   let chars = 0;
-  // Take top scoring chunks regardless of score (don't break at score 0)
-  for (const item of scored) {
-    if (chars + item.chunk.length > maxChars) break;
-    if (item.score === 0 && chars > maxChars * 0.5) break; // stop adding zero-score chunks after half full
-    result += item.chunk + '\n\n';
-    chars += item.chunk.length;
+  for (const win of merged) {
+    const excerpt = content.substring(win.start, win.end);
+    if (chars + excerpt.length > maxChars) break;
+    result += excerpt + '\n\n---\n\n';
+    chars += excerpt.length;
   }
-  
-  // If nothing matched well, fall back to first maxChars
-  if (!result) result = content.substring(0, maxChars) + '\n[showing first portion only]';
-  
-  return result;
+
+  return '[Found ' + hits.length + ' match' + (hits.length !== 1 ? 'es' : '') + ' across ' + merged.length + ' excerpt' + (merged.length !== 1 ? 's' : '') + ' from ' + Object.keys(getContext()[0]?.teacher.files || {}).length + ' transcripts]\n\n' + result;
 }
 
 // ── Search ───────────────────────────────────────────────────────
