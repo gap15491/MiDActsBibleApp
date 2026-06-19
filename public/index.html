@@ -121,6 +121,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .statusbar{background:#fff;border-top:1px solid #e0e0e0;padding:7px 18px;font-size:11px;color:#888;display:flex;align-items:center;gap:6px;}
 .spin{animation:spin 1s linear infinite;display:inline-block;}
 @keyframes spin{to{transform:rotate(360deg);}}
+/* Transcript viewer modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn 0.15s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:860px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;}
+.modal-header{display:flex;align-items:center;gap:10px;padding:16px 20px;background:linear-gradient(135deg,#1a6b3a,#145c30);color:#fff;flex-shrink:0;}
+.modal-header i{font-size:18px;opacity:0.85;}
+.modal-title{flex:1;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.modal-close{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.modal-close:hover{background:rgba(255,255,255,0.28);}
+.modal-meta{padding:10px 20px;background:#f7faf8;border-bottom:1px solid #e5ede8;font-size:11px;color:#888;display:flex;gap:16px;flex-shrink:0;}
+.modal-search{padding:10px 20px;border-bottom:1px solid #e0e0e0;display:flex;gap:8px;flex-shrink:0;}
+.modal-search-input{flex:1;padding:7px 12px;font-size:12px;border:1px solid #ccc;border-radius:6px;background:#f9f9f9;}
+.modal-search-input:focus{outline:none;border-color:#1a6b3a;}
+.modal-body{flex:1;overflow-y:auto;padding:20px;font-size:13px;line-height:1.9;color:#1a1a1a;white-space:pre-wrap;font-family:Georgia,serif;}
+.modal-body .highlight{background:#fff3b0;border-radius:2px;padding:0 2px;}
+.modal-footer{padding:10px 20px;border-top:1px solid #e0e0e0;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#888;flex-shrink:0;background:#f7faf8;}
+.src-link{color:#1a6b3a;text-decoration:underline;cursor:pointer;font-size:11px;font-weight:600;}
+.src-link:hover{color:#145c30;}
 /* diagnostic banner */
 .diag{padding:10px 18px;font-size:12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #e0e0e0;}
 .diag.ok{background:#f0f7f3;color:#1a6b3a;}
@@ -277,6 +295,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="statusbar" id="statusbar"><i class="ti ti-info-circle"></i><span id="status-text">Loading...</span></div>
   </div>
 </div>
+</div>
+
+<!-- Transcript Viewer Modal -->
+<div class="modal-overlay" id="modal-overlay" style="display:none;" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <i class="ti ti-file-text"></i>
+      <span class="modal-title" id="modal-title">Transcript</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-meta" id="modal-meta"></div>
+    <div class="modal-search">
+      <input class="modal-search-input" id="modal-search-input" placeholder="Highlight text in transcript..." oninput="highlightInModal(this.value)"/>
+      <span id="modal-match-count" style="font-size:11px;color:#888;padding:7px 0;white-space:nowrap;"></span>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <span id="modal-footer-info"></span>
+      <button class="btn" onclick="closeModal()" style="font-size:11px;">Close</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -631,7 +670,9 @@ function extractRelevantChunks(fileEntries, query, maxChars) {
 }
 
 // ── Search ───────────────────────────────────────────────────────
+let _searching = false;
 async function doSearch() {
+  if (_searching) return; // prevent double-firing
   const q = document.getElementById('q-search').value.trim();
   if (!q) { setStatus('Enter a question first'); return; }
   const ctx = getContext();
@@ -644,8 +685,10 @@ async function doSearch() {
     return;
   }
 
+  _searching = true;
+  document.querySelectorAll('.btn.green').forEach(function(b){ b.disabled = true; });
   setStatus('Searching ' + ctx.length + ' teacher' + (ctx.length !== 1 ? 's' : '') + '...', true);
-  rl.innerHTML = ''; // clear first — this also removes empty-search div safely
+  rl.innerHTML = ''; // clear results
 
   const contextText = ctx.map(function(x) {
     const perTeacherMax = ctx.length > 1 ? Math.floor(60000 / ctx.length) : 60000;
@@ -694,7 +737,14 @@ async function doSearch() {
     body.className = 'rcard-body';
     const textDiv = document.createElement('div');
     textDiv.className = 'rcard-text';
-    // Light markdown: bold **text**, headers ##, bullet -
+
+    // Build filename → teacherId lookup from current context
+    const fileTeacherMap = {};
+    ctx.forEach(function(x) {
+      x.files.forEach(function(entry) { fileTeacherMap[entry[0]] = x.teacher.id; });
+    });
+
+    // Render answer with markdown + clickable source links
     textDiv.innerHTML = ans
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
       .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#1a6b3a;font-weight:600;">$1</strong>')
@@ -702,6 +752,18 @@ async function doSearch() {
       .replace(/^### (.*)/gm, '<div style="font-size:13px;font-weight:700;color:#1a6b3a;margin:12px 0 4px;">$1</div>')
       .replace(/^- (.*)/gm, '<div style="display:flex;gap:8px;margin:4px 0;"><span style="color:#1a6b3a;margin-top:2px;">•</span><span>$1</span></div>')
       .replace(/^> (.*)/gm, '<div style="border-left:3px solid #1a6b3a;padding:6px 12px;margin:8px 0;background:#f0f7f3;border-radius:0 6px 6px 0;font-style:italic;color:#2a5a3a;">$1</div>')
+      // Convert [Source: filename] and (Source: filename) to clickable links
+      .replace(/\[Source:\s*([^\]]+)\]/g, function(match, fname) {
+        const tid = fileTeacherMap[fname.trim()] || '';
+        return '<span style="display:inline-flex;align-items:center;gap:4px;background:#e4f0e9;border:1px solid #b8d9c4;border-radius:6px;padding:1px 8px;margin:0 2px;">' +
+          '<i class="ti ti-file-text" style="font-size:11px;color:#1a6b3a;"></i>' +
+          '<span class="src-link" onclick="openTranscriptModal(\'' + fname.trim().replace(/'/g,"\\'") + '\',\'' + tid + '\')">' + fname.trim() + '</span>' +
+          '</span>';
+      })
+      .replace(/\(Source:\s*([^)]+)\)/g, function(match, fname) {
+        const tid = fileTeacherMap[fname.trim()] || '';
+        return '(<span class="src-link" onclick="openTranscriptModal(\'' + fname.trim().replace(/'/g,"\\'") + '\',\'' + tid + '\')">' + fname.trim() + '</span>)';
+      })
       .replace(/\n/g, '<br>');
     body.appendChild(textDiv);
     card.appendChild(body);
@@ -714,8 +776,9 @@ async function doSearch() {
     termLabel.textContent = 'Searched:';
     footer.appendChild(termLabel);
     // Extract search terms from the answer header line if present
-    const termMatch = ans.match(/searched: ([^\]]+)\]/);
-    const displayTerms = termMatch ? termMatch[1].split(',').slice(0,6) : q.split(' ').filter(function(w){ return w.length > 3; }).slice(0,6);
+    const STOP = new Set(['the','is','are','was','were','and','but','or','of','to','in','it','its','this','that','these','those','who','what','when','where','why','how','a','an','be','been','has','have','had','do','does','did','will','would','could','should','may','might','with','for','on','at','by','from','as','not','no','so','if','then','than','also','into','about','which','there','their','they','them','we','our','you','your','he','she','his','her']);
+    const displayTerms = q.toLowerCase().replace(/[?!.,;:'"]/g,'').split(/\s+/)
+      .filter(function(w){ return w.length > 2 && !STOP.has(w); }).slice(0,8);
     displayTerms.forEach(function(term) {
       const t = document.createElement('span');
       t.className = 'rcard-term';
@@ -734,6 +797,9 @@ async function doSearch() {
   } catch(e) {
     showError(rl, 'Search failed', e.message);
     setStatus('Error: ' + e.message);
+  } finally {
+    _searching = false;
+    document.querySelectorAll('.btn.green').forEach(function(b){ b.disabled = false; });
   }
 }
 
@@ -968,6 +1034,56 @@ function updateBadges() {
 
 function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escAttr(s) { return (s||'').replace(/'/g,"\\'").replace(/\n/g,' ').substring(0,200); }
+
+// ── Transcript Viewer Modal ──────────────────────────────────────
+let _modalContent = '';
+
+function openTranscriptModal(filename, teacherId) {
+  const teacher = TEACHERS.find(function(t) { return t.id === teacherId; });
+  if (!teacher) { alert('Teacher not found'); return; }
+  const content = teacher.files[filename];
+  if (!content) { alert('Transcript not found in memory'); return; }
+  _modalContent = content;
+  document.getElementById('modal-title').textContent = filename;
+  document.getElementById('modal-meta').innerHTML =
+    '<span><i class="ti ti-user" style="font-size:12px;"></i> ' + escHtml(teacher.name) + '</span>' +
+    '<span><i class="ti ti-building" style="font-size:12px;"></i> ' + escHtml(teacher.ministry) + '</span>' +
+    '<span><i class="ti ti-file-text" style="font-size:12px;"></i> ' + content.length.toLocaleString() + ' chars</span>' +
+    '<span><i class="ti ti-clock" style="font-size:12px;"></i> ~' + Math.round(content.split(/\s+/).length / 130) + ' min read</span>';
+  document.getElementById('modal-footer-info').textContent = filename + ' · ' + teacher.name;
+  document.getElementById('modal-search-input').value = '';
+  document.getElementById('modal-match-count').textContent = '';
+  document.getElementById('modal-body').textContent = content;
+  document.getElementById('modal-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setTimeout(function() { document.getElementById('modal-search-input').focus(); }, 100);
+}
+
+function highlightInModal(val) {
+  const body = document.getElementById('modal-body');
+  if (!val || val.length < 2) {
+    body.textContent = _modalContent;
+    document.getElementById('modal-match-count').textContent = '';
+    return;
+  }
+  const escaped = _modalContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const regex = new RegExp('(' + val.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+  const count = (escaped.match(regex)||[]).length;
+  body.innerHTML = escaped.replace(regex,'<span class="highlight">$1</span>');
+  document.getElementById('modal-match-count').textContent = count > 0 ? count + ' match' + (count!==1?'es':'') : 'no matches';
+  const first = body.querySelector('.highlight');
+  if (first) first.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+function closeModal(event) {
+  if (event && event.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { document.getElementById('modal-overlay').style.display='none'; document.body.style.overflow=''; }
+});
 
 // ── Init ─────────────────────────────────────────────────────────
 renderTeacherList();
