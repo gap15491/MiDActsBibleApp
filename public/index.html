@@ -798,8 +798,54 @@ async function doSearch() {
     ts.textContent = new Date().toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
     footer.appendChild(ts);
     card.appendChild(footer);
-
     rl.appendChild(card);
+
+    // ── MAD Context card (second Claude call) ────────────────────
+    const ctxCard = document.createElement('div');
+    ctxCard.className = 'rcard';
+    ctxCard.style.borderLeft = '4px solid #7c5cbf';
+    ctxCard.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:linear-gradient(135deg,#4a3580,#362660);">' +
+        '<i class="ti ti-users" style="font-size:18px;color:rgba(255,255,255,0.85);"></i>' +
+        '<span style="font-size:14px;font-weight:600;color:#fff;flex:1;">MAD Movement Context</span>' +
+        '<span style="font-size:11px;color:rgba(255,255,255,0.6);font-style:italic;">Checking broader Mid-Acts consensus...</span>' +
+        '<i class="ti ti-loader spin" style="color:rgba(255,255,255,0.7);font-size:16px;"></i>' +
+      '</div>' +
+      '<div class="rcard-body" id="mad-ctx-body" style="color:#555;font-style:italic;font-size:13px;">Analyzing how these views align with mainstream Mid-Acts Dispensational teaching...</div>';
+    rl.appendChild(ctxCard);
+
+    // Fire second call for MAD context
+    const teacherNames = ctx.map(function(x) { return x.teacher.name; }).join(', ');
+    const madPrompt = 'You are an expert on Mid-Acts Pauline Dispensationalism and the Grace Movement, with deep knowledge of teachers including Richard Jordan, J.C. O\'Hair, C.R. Stam, Charles Baker, Cornelius Stam, Les Feldick, Justin Johnson, David Reid, Bryan Ross, Mark Gabert, Terence McLean, and others in the mid-Acts tradition.\n\nBased on the following answer that was synthesized from transcripts of these teachers (' + teacherNames + '), analyze how each position or view expressed aligns with the broader Mid-Acts Dispensational movement:\n\n"""\n' + ans.substring(0, 3000) + '\n"""\n\nFor the topic "' + q + '", provide:\n\n## Mainstream MAD Position\nWhat is the most widely-held view on this topic among mid-Acts grace teachers?\n\n## Where These Teachers Stand\nFor each teacher mentioned, note whether their view is:\n- **Mainstream** — held by the majority of MAD teachers\n- **Minority** — a less common but recognized position within MAD\n- **Distinctive** — a unique emphasis or nuance specific to this teacher\n- **Debated** — a genuinely contested point within MAD circles\n\n## Key MAD Figures on This Topic\nWhich other well-known mid-Acts teachers (not in the transcripts) have addressed this topic, and what do they teach?\n\n## Historical Development\nBriefly note if this is a settled question in MAD history or an ongoing discussion.\n\nBe specific and draw on your knowledge of the mid-Acts grace movement.';
+
+    try {
+      const madAns = await callClaude(madPrompt);
+      const madBody = document.getElementById('mad-ctx-body');
+      if (madBody) {
+        // Update header to remove spinner
+        ctxCard.querySelector('.ti-loader').remove();
+        ctxCard.querySelector('span[style*="italic"]').textContent = 'Based on broad Mid-Acts movement knowledge';
+
+        madBody.style.fontStyle = 'normal';
+        madBody.style.color = '#1a1a1a';
+        const madText = document.createElement('div');
+        madText.className = 'rcard-text';
+        madText.innerHTML = madAns
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/\*\*(.*?)\*\*/g,'<strong style="color:#4a3580;font-weight:600;">$1</strong>')
+          .replace(/^## (.*)/gm,'<div style="font-size:15px;font-weight:700;color:#2d1f5a;margin:16px 0 8px;border-bottom:1px solid #d5caf0;padding-bottom:6px;">$1</div>')
+          .replace(/^### (.*)/gm,'<div style="font-size:13px;font-weight:700;color:#4a3580;margin:12px 0 4px;">$1</div>')
+          .replace(/^- (.*)/gm,'<div style="display:flex;gap:8px;margin:4px 0;"><span style="color:#4a3580;margin-top:2px;">•</span><span>$1</span></div>')
+          .replace(/^> (.*)/gm,'<div style="border-left:3px solid #7c5cbf;padding:6px 12px;margin:8px 0;background:#f5f0ff;border-radius:0 6px 6px 0;font-style:italic;color:#3d2a6e;">$1</div>')
+          .replace(/\n/g,'<br>');
+        madBody.innerHTML = '';
+        madBody.appendChild(madText);
+      }
+    } catch(e) {
+      const madBody = document.getElementById('mad-ctx-body');
+      if (madBody) madBody.textContent = 'Could not load MAD context: ' + e.message;
+    }
+
     await addHistory(q, scope === 'all' ? 'All teachers' : 'Current teacher', ctx.map(function(x) { return x.teacher.name; }).join(', '), 'search');
     setStatus('Done — ' + ctx.length + ' teacher' + (ctx.length !== 1 ? 's' : '') + ' searched');
   } catch(e) {
