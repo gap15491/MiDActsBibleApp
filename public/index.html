@@ -508,11 +508,19 @@ function getContext(scopeOverride) {
     });
 }
 
-// Search ALL transcript text locally, file by file, extract windows tagged with source filename
 function extractRelevantChunks(fileEntries, query, maxChars) {
-  const terms = query.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 2; });
-  if (terms.length === 0) {
-    // No usable terms — return beginning of first few files
+  const STOP_WORDS = new Set(['the','is','are','was','were','and','but','or','of','to','in','it','its','this','that','these','those','who','what','when','where','why','how','a','an','be','been','has','have','had','do','does','did','will','would','could','should','may','might','with','for','on','at','by','from','as','not','no','so','if','then','than','also','into','about','which','there','their','they','them','we','our','you','your','he','she','his','her','his']);
+  
+  const terms = query.toLowerCase()
+    .replace(/[?!.,;:'"]/g, '')
+    .split(/\s+/)
+    .filter(function(w) { return w.length > 2 && !STOP_WORDS.has(w); });
+
+  // If all words filtered out, fall back to all words > 2 chars
+  const searchTerms = terms.length > 0 ? terms : 
+    query.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 3; });
+
+  if (searchTerms.length === 0) {
     let fb = '';
     for (const [name, content] of fileEntries) {
       fb += '[Source: ' + name + ']\n' + content.substring(0, 2000) + '\n\n---\n\n';
@@ -521,17 +529,16 @@ function extractRelevantChunks(fileEntries, query, maxChars) {
     return fb;
   }
 
-  const WINDOW = 500; // chars of context around each match
-  const allHits = []; // { filename, start, end, score }
+  const WINDOW = 500;
+  const allHits = [];
 
   fileEntries.forEach(function(entry) {
     const filename = entry[0];
     const content = entry[1];
     const lower = content.toLowerCase();
 
-    // Find all match positions in this file
     const positions = [];
-    terms.forEach(function(term) {
+    searchTerms.forEach(function(term) {
       let idx = 0;
       while (true) {
         const pos = lower.indexOf(term, idx);
@@ -543,12 +550,10 @@ function extractRelevantChunks(fileEntries, query, maxChars) {
 
     if (positions.length === 0) return;
 
-    // Build windows around each match position
     const windows = positions.map(function(pos) {
       return { start: Math.max(0, pos - WINDOW), end: Math.min(content.length, pos + WINDOW) };
     });
 
-    // Merge overlapping windows
     windows.sort(function(a, b) { return a.start - b.start; });
     const merged = [windows[0]];
     for (let i = 1; i < windows.length; i++) {
@@ -570,16 +575,14 @@ function extractRelevantChunks(fileEntries, query, maxChars) {
   });
 
   if (allHits.length === 0) {
-    return '[No matches found for "' + query + '" across ' + fileEntries.length + ' transcript files]\n\n' +
+    return '[No matches found for "' + query + '" (searched terms: ' + searchTerms.join(', ') + ') across ' + fileEntries.length + ' transcript files]\n\n' +
            fileEntries[0][1].substring(0, 2000);
   }
 
-  // Sort by score descending (most matches in window first)
   allHits.sort(function(a, b) { return b.score - a.score; });
 
-  // Build result tagged with source filenames
-  let result = '[Found matches in transcripts — excerpts tagged with source file]\n\n';
-  let chars = result.length;
+  let result = '';
+  let chars = 0;
   const fileCount = {};
 
   for (const hit of allHits) {
@@ -591,9 +594,7 @@ function extractRelevantChunks(fileEntries, query, maxChars) {
   }
 
   const filesHit = Object.keys(fileCount).length;
-  result = '[Found relevant content in ' + filesHit + ' of ' + fileEntries.length + ' transcript files — showing top excerpts by relevance]\n\n' + result.substring(result.indexOf('\n\n') + 2);
-
-  return result;
+  return '[Found relevant content in ' + filesHit + ' of ' + fileEntries.length + ' transcript files — searched terms: ' + searchTerms.join(', ') + ']\n\n' + result;
 }
 
 // ── Search ───────────────────────────────────────────────────────
