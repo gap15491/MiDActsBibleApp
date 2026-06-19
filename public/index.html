@@ -752,19 +752,27 @@ async function doSearch() {
       .replace(/^### (.*)/gm, '<div style="font-size:13px;font-weight:700;color:#1a6b3a;margin:12px 0 4px;">$1</div>')
       .replace(/^- (.*)/gm, '<div style="display:flex;gap:8px;margin:4px 0;"><span style="color:#1a6b3a;margin-top:2px;">•</span><span>$1</span></div>')
       .replace(/^> (.*)/gm, '<div style="border-left:3px solid #1a6b3a;padding:6px 12px;margin:8px 0;background:#f0f7f3;border-radius:0 6px 6px 0;font-style:italic;color:#2a5a3a;">$1</div>')
-      // Convert [Source: filename] and (Source: filename) to clickable links
-      .replace(/\[Source:\s*([^\]]+)\]/g, function(match, fname) {
-        const tid = fileTeacherMap[fname.trim()] || '';
-        return '<span style="display:inline-flex;align-items:center;gap:4px;background:#e4f0e9;border:1px solid #b8d9c4;border-radius:6px;padding:1px 8px;margin:0 2px;">' +
-          '<i class="ti ti-file-text" style="font-size:11px;color:#1a6b3a;"></i>' +
-          '<span class="src-link" onclick="openTranscriptModal(\'' + fname.trim().replace(/'/g,"\\'") + '\',\'' + tid + '\')">' + fname.trim() + '</span>' +
-          '</span>';
-      })
-      .replace(/\(Source:\s*([^)]+)\)/g, function(match, fname) {
-        const tid = fileTeacherMap[fname.trim()] || '';
-        return '(<span class="src-link" onclick="openTranscriptModal(\'' + fname.trim().replace(/'/g,"\\'") + '\',\'' + tid + '\')">' + fname.trim() + '</span>)';
-      })
       .replace(/\n/g, '<br>');
+
+    // Post-process: find all filename references and make them clickable
+    // Matches: [Source: file], (Source: file), *[Source: file]*, Source: file.md, file.md, file.txt
+    const knownFiles = Object.keys(fileTeacherMap);
+    knownFiles.sort(function(a,b){ return b.length - a.length; }); // longest first to avoid partial matches
+    let html = textDiv.innerHTML;
+    knownFiles.forEach(function(fname) {
+      const tid = fileTeacherMap[fname] || '';
+      const safeOnclick = 'openTranscriptModal(\'' + fname.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\',\'' + tid + '\')';
+      const pill = '<span style="display:inline-flex;align-items:center;gap:4px;background:#e4f0e9;border:1px solid #b8d9c4;border-radius:6px;padding:1px 8px;margin:0 2px;cursor:pointer;" onclick="' + safeOnclick + '">' +
+        '<i class="ti ti-file-text" style="font-size:11px;color:#1a6b3a;"></i>' +
+        '<span class="src-link">' + escHtml(fname) + '</span></span>';
+      // Escape the filename for use in regex
+      const escapedFname = fname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Replace any occurrence of the filename not already inside an onclick
+      const re = new RegExp('(?<!onclick=[^>]{0,200})' + escapedFname, 'g');
+      html = html.replace(re, pill);
+    });
+    textDiv.innerHTML = html;
+
     body.appendChild(textDiv);
     card.appendChild(body);
 
