@@ -1,5 +1,5 @@
 """
-KJV Rightly Divided — backend.
+KJV Rightly Divided — backend. new
 Serves the static Bible + companion chart, and provides a small authenticated
 notes API (per-user chapter and verse notes) backed by Postgres (SQLite locally).
 """
