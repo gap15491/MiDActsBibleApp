@@ -21,9 +21,16 @@ app = Flask(__name__, static_folder=None)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-insecure-change-me")
 
 # --- Database URL: Railway injects DATABASE_URL for the Postgres plugin. ---
+# Force the psycopg2 driver (the one pinned in requirements.txt). Railway/SQLAlchemy may hand
+# us a bare "postgresql://" or a "postgresql+psycopg://" (psycopg v3) URL; psycopg v3 is NOT
+# installed, so creating the engine crashed the worker on boot with
+# "ModuleNotFoundError: No module named 'psycopg'". Rewriting any Postgres scheme to
+# "+psycopg2" keeps us on the driver we actually ship.
 db_url = os.environ.get("DATABASE_URL", "").strip()
-if db_url.startswith("postgres://"):            # SQLAlchemy needs the +psycopg2 dialect name
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
+for _pfx in ("postgresql+psycopg://", "postgresql+psycopg2://", "postgresql://", "postgres://"):
+    if db_url.startswith(_pfx):
+        db_url = "postgresql+psycopg2://" + db_url[len(_pfx):]
+        break
 if not db_url:
     db_url = "sqlite:///" + os.path.join(BASE_DIR, "notes.db")   # local dev fallback
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url
@@ -137,8 +144,14 @@ def _xref_ref(tbook, tchapter, tverse, tverse_end):
 
 
 with app.app_context():
-    db.create_all()
-    _migrate_xrefs()
+    try:
+        db.create_all()
+        _migrate_xrefs()
+    except Exception as _dberr:
+        # Never let a database hiccup at startup take the whole site down. The Bible
+        # reading, contents and commentary work without the DB; the per-user features
+        # (login, notes, highlights, cross-refs, topics) reconnect once the DB is back.
+        print("WARN: database init skipped at startup:", _dberr, flush=True)
 
 
 # ---------------- helpers ----------------
